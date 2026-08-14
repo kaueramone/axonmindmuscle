@@ -1,13 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { defaultLocale, isLocale, locales, negotiateLocale } from "@/lib/i18n/config";
+import { isLocale, negotiateLocale } from "@/lib/i18n/config";
 import { authSegments, protectedSegments, segments } from "@/lib/routes";
 import { updateSession } from "@/lib/supabase/middleware";
 
 const LOCALE_COOKIE = "axon-locale";
 const ONE_YEAR = 60 * 60 * 24 * 365;
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
   // ---- 1. Garantir prefixo de idioma no caminho ----
@@ -82,5 +82,3 @@ export const config = {
     "/((?!_next/static|_next/image|auth/|api/|.*\\.[\\w]+$).*)",
   ],
 };
-
-export { locales, defaultLocale };
