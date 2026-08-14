@@ -1,0 +1,67 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+import { Bolt, Chart, User, Users } from "@/components/ui/icons";
+import type { Locale } from "@/lib/i18n/config";
+import { route, type RouteKey } from "@/lib/routes";
+import { cn } from "@/lib/utils";
+
+type Tab = { key: RouteKey; label: string; Icon: typeof Bolt };
+
+/**
+ * Barra de separadores ao estilo iOS: fixa no fundo, material translúcido,
+ * ícone e etiqueta, com respeito pela safe area do iPhone.
+ */
+export function TabBar({
+  locale,
+  labels,
+}: {
+  locale: Locale;
+  labels: { today: string; progress: string; community: string; profile: string };
+}) {
+  const pathname = usePathname();
+
+  const tabs: Tab[] = [
+    { key: "today", label: labels.today, Icon: Bolt },
+    { key: "progress", label: labels.progress, Icon: Chart },
+    { key: "community", label: labels.community, Icon: Users },
+    { key: "profile", label: labels.profile, Icon: User },
+  ];
+
+  return (
+    <nav
+      aria-label={labels.today}
+      className="fixed inset-x-0 bottom-0 z-40 material border-t border-hairline safe-b"
+    >
+      <ul className="mx-auto flex max-w-lg items-stretch">
+        {tabs.map(({ key, label, Icon }) => {
+          const href = route(locale, key);
+          const active = pathname === href || pathname.startsWith(`${href}/`);
+
+          return (
+            <li key={key} className="flex-1">
+              <Link
+                href={href}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "flex flex-col items-center gap-1 py-2.5 transition-colors duration-200",
+                  active ? "text-accent" : "text-fg-subtle hover:text-fg-muted",
+                )}
+              >
+                <Icon
+                  className={cn(
+                    "size-6 transition-transform duration-300 [transition-timing-function:var(--ease-spring)]",
+                    active && "scale-110",
+                  )}
+                />
+                <span className="text-caption2 font-medium">{label}</span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}
