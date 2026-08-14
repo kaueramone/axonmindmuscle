@@ -193,6 +193,16 @@ const GOALS: TrainingGoal[] = ["hypertrophy", "strength", "endurance", "health"]
 const LEVELS: ExperienceLevel[] = ["beginner", "intermediate", "advanced"];
 const THEMES: ThemePreference[] = ["system", "light", "dark"];
 
+/**
+ * Fuso inicial por mercado. É só um palpite para o primeiro instante da
+ * conta: o Brasil tem quatro fusos e Portugal tem dois, por isso a deteção
+ * no dispositivo sobrepõe-se sempre a isto.
+ */
+const DEFAULT_TIMEZONE: Record<"PT" | "BR", string> = {
+  PT: "Europe/Lisbon",
+  BR: "America/Sao_Paulo",
+};
+
 function optionalNumber(value: FormDataEntryValue | null): number | null {
   const text = String(value ?? "").trim();
   if (!text) return null;
@@ -284,11 +294,31 @@ export async function updatePreferencesAction(formData: FormData): Promise<void>
   const theme = String(formData.get("theme") ?? "");
   const locale = String(formData.get("preferred_locale") ?? "");
 
-  const patch: { theme?: ThemePreference; locale?: Locale; market?: "PT" | "BR" } = {};
+  const patch: {
+    theme?: ThemePreference;
+    locale?: Locale;
+    market?: "PT" | "BR";
+    timezone?: string;
+  } = {};
+
   if (THEMES.includes(theme as ThemePreference)) patch.theme = theme as ThemePreference;
+
   if (isLocale(locale)) {
     patch.locale = locale;
     patch.market = marketByLocale[locale].market;
+
+    // O mercado só semeia o fuso enquanto este continuar no valor de omissão
+    // do mercado anterior. Assim que o dispositivo reportou o fuso real, é
+    // ele que manda: quem emigra fala a língua de origem no fuso de destino.
+    const { data: atual } = await supabase
+      .from("profiles")
+      .select("timezone")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (atual && (atual.timezone === "Europe/Lisbon" || atual.timezone === "America/Sao_Paulo")) {
+      patch.timezone = DEFAULT_TIMEZONE[patch.market];
+    }
   }
 
   if (Object.keys(patch).length === 0) return;
