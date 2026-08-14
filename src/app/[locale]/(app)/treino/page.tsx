@@ -2,12 +2,17 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { AppHeader } from "@/components/app/app-header";
-import { WorkoutRunner } from "@/components/workout/workout-runner";
+import {
+  WorkoutRunner,
+  type ReadinessHint,
+} from "@/components/workout/workout-runner";
 import type { ExerciseOption } from "@/components/workout/exercise-picker";
 import { getDictionary } from "@/lib/i18n";
 import { assertLocale } from "@/lib/i18n/config";
 import { route } from "@/lib/routes";
+import { prescriptionFor } from "@/lib/readiness/score";
 import { createClient } from "@/lib/supabase/server";
+import { localDate } from "@/lib/workout/periods";
 
 export const metadata: Metadata = { title: "Treino", robots: { index: false } };
 
@@ -50,6 +55,28 @@ export default async function WorkoutPage({
     .filter((e) => e.name)
     .sort((a, b) => a.name.localeCompare(b.name, locale));
 
+  // Prontidão de hoje: ajusta os valores de partida do treino.
+  const { data: perfil } = await supabase
+    .from("profiles")
+    .select("timezone")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const { data: prontidao } = await supabase
+    .from("readiness_checkins")
+    .select("state, sore_muscles")
+    .eq("user_id", user.id)
+    .eq("local_date", localDate(new Date(), perfil?.timezone ?? "Europe/Lisbon"))
+    .maybeSingle();
+
+  const readiness: ReadinessHint | null = prontidao
+    ? {
+        state: prontidao.state,
+        ...prescriptionFor(prontidao.state),
+        avoidMuscles: (prontidao.sore_muscles ?? []) as string[],
+      }
+    : null;
+
   // Uma sessão por terminar significa treino a decorrer.
   const { data: aberta } = await supabase
     .from("workout_sessions")
@@ -80,6 +107,7 @@ export default async function WorkoutPage({
           userId={user.id}
           exercises={exercises}
           existingSessionId={aberta?.id ?? null}
+          readiness={readiness}
         />
       </div>
     </>

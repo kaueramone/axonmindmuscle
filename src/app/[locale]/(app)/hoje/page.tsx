@@ -37,7 +37,6 @@ export default async function TodayPage({
   const firstName = profile?.display_name?.split(" ")[0] ?? "";
 
   const tools = [
-    { icon: <Bolt className="size-4.5" />, ...pick(copy.tools, "readiness") },
     { icon: <Sparkle className="size-4.5" />, ...pick(copy.tools, "assistant") },
     { icon: <Users className="size-4.5" />, ...pick(copy.tools, "community") },
   ];
@@ -73,6 +72,14 @@ export default async function TodayPage({
             {dict.workout.startCta}
           </ButtonLink>
         </Card>
+
+        <ListRow
+          icon={<Bolt className="size-4.5" />}
+          label={dict.readiness.cta}
+          detail={dict.readiness.intro}
+          href={route(locale, "readiness")}
+          className="rounded-xl border border-hairline bg-surface"
+        />
 
         <ListGroup title={copy.toolsTitle}>
           {tools.map((tool) => (

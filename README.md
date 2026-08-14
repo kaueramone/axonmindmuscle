@@ -21,10 +21,11 @@ Fundação da plataforma e a primeira ferramenta de treino:
   técnico
 - Instalação no telemóvel e página de estado offline
 - **Metrónomo visual** com registo de séries, catálogo de 74 exercícios e
-  histórico de progresso
+  histórico de progresso por período
+- **Painel de prontidão** que ajusta a prescrição do treino do dia
 
-**Fora do âmbito desta fase** (por decisão da proposta): painel de
-prontidão, tutoriais, Professor AXON, comunidade, pontos e pagamentos.
+**Fora do âmbito desta fase** (por decisão da proposta): tutoriais,
+Professor AXON, comunidade, pontos e pagamentos.
 As entradas para estas ferramentas já existem na interface, marcadas
 honestamente como em desenvolvimento.
 
@@ -135,6 +136,14 @@ workout_sets_local
            security_invoker mantém o RLS da tabela de origem.
 training_sets_by_muscle() / training_daily_summary()
            agregações por período, ambas security invoker.
+readiness_checkins
+           um registo de prontidão por dia local, com a pontuação, o estado
+           e os fatores que a determinaram, para a recomendação ser
+           auditável mais tarde.
+readiness_context()
+           o que se deriva do histórico sem perguntar nada: médias pessoais
+           de sono e batimento, dias seguidos de treino, carga da semana
+           face à média e grupos treinados nas últimas 48 horas.
 ```
 
 O gatilho `handle_new_user` lê `display_name`, `locale` e `market` dos
@@ -190,6 +199,35 @@ por isso a decisão é reversível: uma importação futura pode conviver com o
 catálogo próprio e o crédito aparece sozinho no seletor de exercícios
 sempre que existirem registos de terceiros. O script de importação está no
 histórico do git, no commit que o removeu.
+
+---
+
+## Painel de prontidão
+
+Quatro perguntas — energia, qualidade do sono, horas dormidas e dores — mais
+o batimento em repouso, que é opcional. Tudo o resto vem do histórico.
+
+O modelo é uma **heurística ponderada**, não um marcador validado de
+recuperação. A literatura sustenta que questionários subjetivos de bem-estar
+acompanham a resposta à carga de treino; não sustenta que uma pontuação
+calculada assim determine o que se deve levantar hoje. Por isso a interface
+mostra sempre que fatores empurraram o resultado, o texto diz que é uma
+recomendação e não um diagnóstico, e o painel nunca impede ninguém de
+treinar.
+
+Duas decisões que sustentam a honestidade do resultado:
+
+- **A frequência cardíaca só entra com base pessoal.** 62 bpm não diz nada;
+  62 quando a média de catorze dias são 54 diz. Sem cinco registos, o campo
+  é ignorado no cálculo e a interface explica porquê.
+- **O ajuste do histórico é pequeno de propósito.** Dias seguidos de treino
+  e picos de carga movem a pontuação seis pontos, não trinta: são contexto,
+  não devem dominar o que a pessoa está a sentir.
+
+O resultado aterra em ação — a página de treino lê a prontidão do dia,
+ajusta as repetições em reserva de partida, mostra a carga sugerida e avisa
+quando o exercício escolhido usa um grupo dorido ou treinado há menos de 48
+horas. Sem isso, o painel seria um horóscopo.
 
 ---
 

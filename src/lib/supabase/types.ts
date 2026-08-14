@@ -124,6 +124,42 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["workout_sets"]["Insert"]>;
         Relationships: [];
       };
+      readiness_checkins: {
+        Row: {
+          created_at: string;
+          drivers: Json;
+          fatigue: number | null;
+          id: string;
+          local_date: string;
+          resting_hr: number | null;
+          score: number;
+          sleep_hours: number | null;
+          sleep_quality: number | null;
+          sore_muscles: Database["public"]["Enums"]["muscle_group"][];
+          soreness: number | null;
+          state: Database["public"]["Enums"]["readiness_state"];
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          drivers?: Json;
+          fatigue?: number | null;
+          id?: string;
+          local_date: string;
+          resting_hr?: number | null;
+          score: number;
+          sleep_hours?: number | null;
+          sleep_quality?: number | null;
+          sore_muscles?: Database["public"]["Enums"]["muscle_group"][];
+          soreness?: number | null;
+          state: Database["public"]["Enums"]["readiness_state"];
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["readiness_checkins"]["Insert"]>;
+        Relationships: [];
+      };
       leads: {
         Row: {
           created_at: string;
@@ -234,6 +270,19 @@ export type Database = {
       };
     };
     Functions: {
+      readiness_context: {
+        Args: Record<string, never>;
+        Returns: {
+          baseline_resting_hr: number | null;
+          baseline_sleep_hours: number | null;
+          baseline_days: number;
+          days_since_last_session: number | null;
+          consecutive_days: number;
+          sets_last_7: number;
+          avg_weekly_sets: number;
+          recent_muscles: Database["public"]["Enums"]["muscle_group"][];
+        }[];
+      };
       training_sets_by_muscle: {
         Args: { p_from: string; p_to: string };
         Returns: {
@@ -254,6 +303,7 @@ export type Database = {
     };
     Enums: {
       app_locale: "pt-pt" | "pt-br";
+      readiness_state: "strong" | "moderate" | "rest";
       exercise_source: "wger" | "axon";
       muscle_group:
         | "peito"

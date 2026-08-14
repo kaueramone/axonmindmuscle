@@ -23,6 +23,14 @@ import {
   tempoToColumns,
 } from "@/lib/workout/store";
 import { useMetronome, type Tempo } from "@/lib/workout/use-metronome";
+import type { ReadinessState } from "@/lib/readiness/score";
+
+export type ReadinessHint = {
+  state: ReadinessState;
+  loadDelta: number;
+  rirDelta: number;
+  avoidMuscles: string[];
+};
 
 type Step = "picking" | "configuring" | "running" | "logging" | "resting" | "summary";
 
@@ -48,12 +56,14 @@ export function WorkoutRunner({
   userId,
   exercises,
   existingSessionId,
+  readiness,
 }: {
   locale: Locale;
   dict: Dict;
   userId: string;
   exercises: ExerciseOption[];
   existingSessionId: string | null;
+  readiness: ReadinessHint | null;
 }) {
   const copy = dict.workout;
 
@@ -63,7 +73,10 @@ export function WorkoutRunner({
   const [tempo, setTempo] = useState<Tempo>(PRESETS[0].tempo);
   const [targetReps, setTargetReps] = useState(10);
   const [weight, setWeight] = useState("");
-  const [rir, setRir] = useState<number | null>(2);
+  // A prontidão de hoje entra como valor de partida, não como imposição.
+  const [rir, setRir] = useState<number | null>(
+    Math.min(4, 2 + (readiness?.rirDelta ?? 0)),
+  );
   const [sound, setSound] = useState(false);
   const [haptics, setHaptics] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -248,6 +261,22 @@ export function WorkoutRunner({
             <ChevronLeft className="size-4" />
             {exercise.name}
           </button>
+
+          {readiness && readiness.rirDelta > 0 ? (
+            <Alert tone="info">
+              <strong className="font-semibold">
+                {dict.readiness.states[readiness.state]}.
+              </strong>{" "}
+              {dict.readiness.adjustLoad} {Math.round(readiness.loadDelta * 100)}% ·{" "}
+              {dict.readiness.adjustRir} +{readiness.rirDelta}
+            </Alert>
+          ) : null}
+
+          {readiness && readiness.avoidMuscles.includes(exercise.category) ? (
+            <Alert tone="danger">
+              {dict.readiness.avoidTitle}: {dict.readiness.avoidHint}
+            </Alert>
+          ) : null}
 
           <Card className="flex flex-col gap-4">
             <div>
