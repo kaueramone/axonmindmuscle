@@ -335,6 +335,24 @@
   }
 }
 
+/* Impulso a percorrer um axónio do fundo do hero. */
+@keyframes axon-travel {
+  0% {
+    left: 0%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    left: 100%;
+    opacity: 0;
+  }
+}
+
 @keyframes axon-shimmer {
   100% {
     transform: translateX(100%);

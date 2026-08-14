@@ -294,5 +294,8 @@ export async function updatePreferencesAction(formData: FormData): Promise<void>
   if (Object.keys(patch).length === 0) return;
 
   await supabase.from("profiles").update(patch).eq("id", user.id);
-  revalidatePath("/", "layout");
+
+  // O tema é aplicado no cliente; revalidar a layout aqui só provocaria
+  // uma re-renderização capaz de repor o atributo no <html>.
+  if (patch.locale) revalidatePath("/", "layout");
 }

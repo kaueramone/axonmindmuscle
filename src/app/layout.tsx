@@ -68,7 +68,6 @@ export default function RootLayout({
   return (
     <html
       lang="pt"
-      data-theme="dark"
       suppressHydrationWarning
       className={`${outfit.variable} ${jura.variable} ${geistMono.variable}`}
     >

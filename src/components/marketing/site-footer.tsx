@@ -39,8 +39,8 @@ export function SiteFooter({ locale, dict }: { locale: Locale; dict: Dict }) {
     <footer className="border-t border-hairline bg-bg-sunken/50">
       <div className="mx-auto max-w-6xl px-5 py-14 sm:px-8">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_repeat(3,1fr)]">
-          <div className="flex flex-col gap-4">
-            <LogoLockup className="h-11 w-auto text-fg" />
+          <div className="flex flex-col items-start gap-5">
+            <LogoLockup className="h-20 w-auto text-fg sm:h-24" />
             <p className="max-w-xs text-footnote text-fg-subtle">
               {dict.meta.tagline}
             </p>

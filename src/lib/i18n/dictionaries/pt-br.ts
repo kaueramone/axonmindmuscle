@@ -438,6 +438,13 @@ const dictionary: Dict = {
       weightKg: "Peso (kg)",
       birthDate: "Data de nascimento",
       updated: "Perfil atualizado.",
+      photo: "Foto",
+      photoChange: "Trocar foto",
+      photoRemove: "Remover",
+      photoHint: "JPG, PNG ou WebP até 2 MB. A gente recorta no centro pra você.",
+      photoTooLarge: "A imagem tem mais de 2 MB.",
+      photoWrongType: "Formato não suportado. Use JPG, PNG ou WebP.",
+      photoFailed: "Não foi possível salvar a foto. Tente novamente.",
     },
     account: {
       title: "Conta",

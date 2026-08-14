@@ -52,6 +52,10 @@ export default async function TodayPage({
         title={copy.title}
         locale={locale}
         accountLabel={dict.nav.account}
+        themeLabels={{
+          light: dict.app.account.appearanceLight,
+          dark: dict.app.account.appearanceDark,
+        }}
         eyebrow={dict.common.tagline}
       />
 

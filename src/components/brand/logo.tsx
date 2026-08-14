@@ -1,4 +1,6 @@
 import {
+  AXON_ORIGIN,
+  AXON_VIEWBOX,
   LOCKUP_ORIGIN,
   LOCKUP_VIEWBOX,
   PATH_IMPULSE,
@@ -115,6 +117,27 @@ export function LogoPulse({ className, title = "AXON" }: LogoProps) {
           className="animate-impulse origin-center"
           style={{ transformBox: "fill-box" }}
         />
+      </g>
+    </svg>
+  );
+}
+
+/**
+ * Só a palavra AXON, sem símbolo nem tagline — a versão alternativa do
+ * manual. Usada onde o espaço é curto, como o cabeçalho da aplicação.
+ * Proporção 4,04 : 1.
+ */
+export function LogoAxon({ className, title = "AXON" }: LogoProps) {
+  return (
+    <svg
+      viewBox={AXON_VIEWBOX}
+      className={className}
+      role="img"
+      aria-label={title}
+      fill="none"
+    >
+      <g transform={`translate(${-AXON_ORIGIN.x} ${-AXON_ORIGIN.y})`}>
+        <path d={PATH_WORDMARK} fill="currentColor" />
       </g>
     </svg>
   );

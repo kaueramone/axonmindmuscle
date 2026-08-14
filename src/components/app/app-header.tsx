@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
-import { LogoSymbol } from "@/components/brand/logo";
+import { LogoAxon } from "@/components/brand/logo";
+import { ThemeToggle } from "@/components/app/theme-toggle";
 import { Gear } from "@/components/ui/icons";
 import type { Locale } from "@/lib/i18n/config";
 import { route } from "@/lib/routes";
@@ -11,18 +12,20 @@ import { cn } from "@/lib/utils";
 
 /**
  * Cabeçalho com título grande que encolhe ao deslocar, como nas aplicações
- * nativas da Apple: o título migra para a barra compacta.
+ * nativas da Apple: o título migra para a barra compacta e o wordmark sai.
  */
 export function AppHeader({
   title,
   locale,
   accountLabel,
+  themeLabels,
   eyebrow,
   action,
 }: {
   title: string;
   locale: Locale;
   accountLabel: string;
+  themeLabels: { light: string; dark: string };
   eyebrow?: string;
   action?: ReactNode;
 }) {
@@ -49,22 +52,30 @@ export function AppHeader({
         )}
       >
         <div className="mx-auto flex h-14 max-w-2xl items-center gap-3 px-5">
-          <LogoSymbol
+          <Link
+            href={route(locale, "today")}
+            aria-label="AXON"
             className={cn(
-              "h-3 w-auto text-fg transition-opacity duration-300",
-              collapsed ? "opacity-0" : "opacity-100",
+              "shrink-0 text-fg transition-opacity duration-300",
+              collapsed ? "pointer-events-none opacity-0" : "opacity-100",
             )}
-          />
+          >
+            <LogoAxon className="h-4 w-auto" />
+          </Link>
+
           <span
             className={cn(
-              "flex-1 truncate text-headline font-semibold text-fg transition-opacity duration-300",
+              "absolute left-1/2 max-w-[50%] -translate-x-1/2 truncate text-headline font-semibold text-fg transition-opacity duration-300",
               collapsed ? "opacity-100" : "opacity-0",
             )}
           >
             {title}
           </span>
-          <span className={cn("flex-1", collapsed && "hidden")} />
+
+          <span className="flex-1" />
+
           {action}
+          <ThemeToggle labels={themeLabels} />
           <Link
             href={route(locale, "account")}
             aria-label={accountLabel}

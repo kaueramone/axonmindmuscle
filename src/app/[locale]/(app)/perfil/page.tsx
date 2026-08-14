@@ -40,11 +40,15 @@ export default async function ProfilePage({
         title={dict.app.profile.title}
         locale={locale}
         accountLabel={dict.nav.account}
+        themeLabels={{
+          light: dict.app.account.appearanceLight,
+          dark: dict.app.account.appearanceDark,
+        }}
         eyebrow={dict.common.tagline}
       />
 
       <div className="mx-auto max-w-2xl px-5 pt-6">
-        <ProfileForm profile={profile} dict={dict} />
+        <ProfileForm profile={profile} dict={dict} locale={locale} />
       </div>
     </>
   );

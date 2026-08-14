@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { LogoSymbol } from "@/components/brand/logo";
+import { LogoSymbol, LogoWordmark } from "@/components/brand/logo";
+import { AxonField } from "@/components/marketing/axon-field";
 import { MetronomeDemo } from "@/components/marketing/metronome-demo";
 import { Reveal } from "@/components/marketing/reveal";
 import { ButtonLink } from "@/components/ui/button";
@@ -58,15 +59,16 @@ export default async function FitnessLandingPage({
     <>
       {/* ---------------- Hero ---------------- */}
       <section className="relative overflow-hidden">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 -top-40 h-[36rem] bg-[radial-gradient(60%_50%_at_50%_40%,var(--accent-soft),transparent_70%)]"
-        />
+        <AxonField />
 
         <div className="relative mx-auto max-w-6xl px-5 pb-20 pt-16 sm:px-8 sm:pb-28 sm:pt-24">
           <div className="mx-auto max-w-3xl text-center">
             <Reveal>
-              <p className="label-brand text-accent">{copy.eyebrow}</p>
+              {/* Wordmark do manual: acompanha o tema por currentColor. */}
+              <LogoWordmark
+                className="mx-auto h-14 w-auto text-fg sm:h-16"
+                title={dict.common.brandFull}
+              />
             </Reveal>
 
             <Reveal delay={80}>

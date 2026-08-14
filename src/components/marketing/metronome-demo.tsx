@@ -130,12 +130,17 @@ export function MetronomeDemo({
         <span className="absolute left-0 top-1/2 size-8 -translate-y-1/2 rounded-full border-2 border-current text-fg" />
         <span className="absolute right-0 top-1/2 size-8 -translate-y-1/2 rounded-full bg-fg" />
 
+        {/*
+          O Tailwind v4 centra com a propriedade `translate`, que se combina
+          com `transform`. A pulsação usa a propriedade `scale` para não
+          desalinhar o impulso do eixo.
+        */}
         <span
           className="absolute top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#307FE2] shadow-[0_0_20px_rgba(48,127,226,0.7)]"
           style={{
             left: `calc(2rem + ${progress} * (100% - 4rem))`,
-            transform: `translate(-50%, -50%) scale(${phase === "hold" ? 1.35 : 1})`,
-            transition: "transform 320ms var(--ease-spring)",
+            scale: phase === "hold" ? "1.35" : "1",
+            transition: "scale 320ms var(--ease-spring)",
           }}
         />
       </div>
