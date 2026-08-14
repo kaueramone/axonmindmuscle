@@ -128,6 +128,13 @@ exercises  catálogo, com traduções em exercise_translations e a licença
            de cada registo. Leitura pública, escrita só pela chave de serviço.
 workout_sessions / workout_sets
            registo de treino. RLS: cada utilizador só vê as suas.
+workout_sets_local
+           vista com a data de cada série no fuso do utilizador
+           (profiles.timezone). Toda a agregação por período parte daqui —
+           em UTC, um treino nocturno no Brasil contaria no dia seguinte.
+           security_invoker mantém o RLS da tabela de origem.
+training_sets_by_muscle() / training_daily_summary()
+           agregações por período, ambas security invoker.
 ```
 
 O gatilho `handle_new_user` lê `display_name`, `locale` e `market` dos

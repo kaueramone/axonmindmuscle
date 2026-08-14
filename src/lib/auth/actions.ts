@@ -299,3 +299,20 @@ export async function updatePreferencesAction(formData: FormData): Promise<void>
   // uma re-renderização capaz de repor o atributo no <html>.
   if (patch.locale) revalidatePath("/", "layout");
 }
+
+/**
+ * Guarda o fuso do utilizador. Toda a agregação de progresso por dia,
+ * semana e mês depende dele: sem isto, um treino nocturno no Brasil conta
+ * no dia seguinte.
+ */
+export async function updateTimezoneAction(timezone: string): Promise<void> {
+  if (!/^[A-Za-z]+\/[A-Za-z_+\-0-9\/]+$/.test(timezone)) return;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase.from("profiles").update({ timezone }).eq("id", user.id);
+}

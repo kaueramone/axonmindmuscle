@@ -166,6 +166,7 @@ export type Database = {
           onboarding_completed_at: string | null;
           plan: Database["public"]["Enums"]["user_plan"];
           theme: Database["public"]["Enums"]["theme_preference"];
+          timezone: string;
           updated_at: string;
           weekly_frequency: number | null;
           weight_kg: number | null;
@@ -184,6 +185,7 @@ export type Database = {
           onboarding_completed_at?: string | null;
           plan?: Database["public"]["Enums"]["user_plan"];
           theme?: Database["public"]["Enums"]["theme_preference"];
+          timezone?: string;
           updated_at?: string;
           weekly_frequency?: number | null;
           weight_kg?: number | null;
@@ -202,6 +204,7 @@ export type Database = {
           onboarding_completed_at?: string | null;
           plan?: Database["public"]["Enums"]["user_plan"];
           theme?: Database["public"]["Enums"]["theme_preference"];
+          timezone?: string;
           updated_at?: string;
           weekly_frequency?: number | null;
           weight_kg?: number | null;
@@ -209,8 +212,46 @@ export type Database = {
         Relationships: [];
       };
     };
-    Views: { [_ in never]: never };
-    Functions: { [_ in never]: never };
+    Views: {
+      workout_sets_local: {
+        Row: {
+          completed_at: string;
+          exercise_id: string | null;
+          exercise_name: string;
+          id: string;
+          local_date: string;
+          reps: number | null;
+          rir: number | null;
+          session_id: string;
+          tempo_concentric_s: number | null;
+          tempo_eccentric_s: number | null;
+          tempo_pause_s: number | null;
+          user_id: string;
+          volume_kg: number;
+          weight_kg: number | null;
+        };
+        Relationships: [];
+      };
+    };
+    Functions: {
+      training_sets_by_muscle: {
+        Args: { p_from: string; p_to: string };
+        Returns: {
+          muscle: Database["public"]["Enums"]["muscle_group"];
+          sets: number;
+          volume_kg: number;
+        }[];
+      };
+      training_daily_summary: {
+        Args: { p_from: string; p_to: string };
+        Returns: {
+          dia: string;
+          sets: number;
+          volume_kg: number;
+          exercicios: number;
+        }[];
+      };
+    };
     Enums: {
       app_locale: "pt-pt" | "pt-br";
       exercise_source: "wger" | "axon";
@@ -242,6 +283,9 @@ type PublicSchema = Database["public"];
 
 export type Tables<T extends keyof PublicSchema["Tables"]> =
   PublicSchema["Tables"][T]["Row"];
+
+export type Views<T extends keyof PublicSchema["Views"]> =
+  PublicSchema["Views"][T]["Row"];
 
 export type TablesInsert<T extends keyof PublicSchema["Tables"]> =
   PublicSchema["Tables"][T]["Insert"];
