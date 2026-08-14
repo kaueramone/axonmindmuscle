@@ -9,8 +9,7 @@ Funciona no navegador e instala-se no ecrã inicial como uma aplicação (PWA).
 
 ## Estado atual
 
-Esta fase entrega a **fundação da plataforma** — a base sobre a qual as
-ferramentas de treino vão assentar:
+Fundação da plataforma e a primeira ferramenta de treino:
 
 - Sistema de design completo, derivado do Manual de Marca (Agosto 2026)
 - Autenticação: email + palavra-passe e Google, com confirmação de email e
@@ -21,11 +20,13 @@ ferramentas de treino vão assentar:
 - Duas landing pages: uma para o público de resultado, outra para o público
   técnico
 - Instalação no telemóvel e página de estado offline
+- **Metrónomo visual** com registo de séries, catálogo de 74 exercícios e
+  histórico de progresso
 
-**Fora do âmbito desta fase** (por decisão da proposta): metrónomo visual,
-painel de prontidão, tutoriais, Professor AXON, comunidade, pontos e
-pagamentos. As entradas para estas ferramentas já existem na interface,
-marcadas honestamente como em desenvolvimento.
+**Fora do âmbito desta fase** (por decisão da proposta): painel de
+prontidão, tutoriais, Professor AXON, comunidade, pontos e pagamentos.
+As entradas para estas ferramentas já existem na interface, marcadas
+honestamente como em desenvolvimento.
 
 ---
 
@@ -33,7 +34,7 @@ marcadas honestamente como em desenvolvimento.
 
 | Camada | Tecnologia |
 | --- | --- |
-| Framework | Next.js 15 (App Router, React 19, TypeScript) |
+| Framework | Next.js 16 (App Router, React 19, TypeScript) |
 | Estilos | Tailwind CSS v4 com tokens semânticos próprios |
 | Base de dados e autenticação | Supabase (Postgres 17, RLS ativo) |
 | Alojamento | Vercel |
@@ -75,7 +76,7 @@ src/
 │   │   ├── (marketing)/      páginas públicas: LP fitness e LP técnica
 │   │   ├── (auth)/           entrar, criar conta, recuperar acesso
 │   │   ├── (onboarding)/     calibração inicial em quatro passos
-│   │   └── (app)/            área privada: hoje, progresso, comunidade, perfil, conta
+│   │   └── (app)/            área privada: hoje, treino, progresso, comunidade, perfil, conta
 │   ├── auth/                 callback OAuth e confirmação de email
 │   └── globals.css           sistema de design (tokens, escalas, materiais)
 ├── components/
@@ -83,13 +84,15 @@ src/
 │   ├── ui/                   primitivas: botão, campo, lista, segmentado, ícones
 │   ├── marketing/            cabeçalho, rodapé, demonstrações
 │   ├── app/                  barra de separadores, cabeçalho, formulários
+│   ├── workout/              metrónomo, seletor de exercícios, sessão
 │   └── theme.tsx             tema claro/escuro sem cintilação inicial
 ├── lib/
 │   ├── i18n/                 locales, dicionários pt-PT e pt-BR, mercados
 │   ├── supabase/             clientes browser/servidor/middleware e tipos
 │   ├── auth/                 ações de servidor
+│   ├── workout/              motor do metrónomo e fila local de séries
 │   └── routes.ts             segmentos de rota com prefixo de idioma
-└── middleware.ts             negociação de idioma + sessão + guardas de acesso
+└── proxy.ts                  negociação de idioma + sessão + guardas de acesso
 ```
 
 ---
@@ -121,6 +124,10 @@ profiles   perfil de cada utilizador (1:1 com auth.users), criado por gatilho
            no registo. RLS: cada utilizador só lê e altera a sua linha.
 leads      captação de emails nas páginas públicas. Escrita anónima
            permitida, leitura apenas com a chave de serviço.
+exercises  catálogo, com traduções em exercise_translations e a licença
+           de cada registo. Leitura pública, escrita só pela chave de serviço.
+workout_sessions / workout_sets
+           registo de treino. RLS: cada utilizador só vê as suas.
 ```
 
 O gatilho `handle_new_user` lê `display_name`, `locale` e `market` dos
@@ -155,6 +162,27 @@ Cloud.
 **URLs de redirecionamento** — no Supabase, em Authentication → URL
 Configuration, o `Site URL` e a lista de `Redirect URLs` têm de incluir o
 domínio de produção.
+
+---
+
+## Catálogo de exercícios
+
+74 exercícios escritos de raiz, em pt-PT e pt-BR, curados para musculação.
+Vivem em `public.exercises` com as traduções em `public.exercise_translations`.
+
+**Porque não importámos do wger.** A hipótese foi avaliada e medida em
+Agosto de 2026. A API do wger tem 863 exercícios, mas só 66 com tradução
+portuguesa (7,6%) e nenhum em português do Brasil — e os que existem são
+sobretudo cardio e calistenia, não musculação. Em troca, os dados são
+CC-BY-SA 4.0: obrigariam a crédito visível e a manter a tabela de
+exercícios da AXON disponível nos mesmos termos, de forma permanente.
+A conta não compensava.
+
+O esquema mantém as colunas `source`, `license` e `attribution` por linha,
+por isso a decisão é reversível: uma importação futura pode conviver com o
+catálogo próprio e o crédito aparece sozinho no seletor de exercícios
+sempre que existirem registos de terceiros. O script de importação está no
+histórico do git, no commit que o removeu.
 
 ---
 

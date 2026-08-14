@@ -115,7 +115,7 @@ export function ExercisePicker({
         <p className="py-8 text-center text-callout text-fg-subtle">{copy.noResults}</p>
       ) : (
         <ul className="flex flex-col overflow-hidden rounded-xl border border-hairline bg-surface divide-y divide-[var(--hairline)]">
-          {filtrados.slice(0, 60).map((exercise) => (
+          {filtrados.map((exercise) => (
             <li key={exercise.id}>
               <button
                 type="button"
