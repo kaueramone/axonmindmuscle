@@ -10,6 +10,7 @@ export const segments = {
   reset: "nova-palavra-passe",
   onboarding: "calibrar",
   today: "hoje",
+  workout: "treino",
   progress: "progresso",
   community: "comunidade",
   profile: "perfil",
@@ -30,6 +31,7 @@ export function route(locale: Locale, key: RouteKey): string {
 export const protectedSegments: string[] = [
   segments.onboarding,
   segments.today,
+  segments.workout,
   segments.progress,
   segments.community,
   segments.profile,

@@ -3,13 +3,10 @@ import type { Metadata } from "next";
 
 import { AppHeader } from "@/components/app/app-header";
 import { Greeting } from "@/components/app/greeting";
-import {
-  Bolt,
-  Clock,
-  Sparkle,
-  Users,
-} from "@/components/ui/icons";
+import { Bolt, Sparkle, Users } from "@/components/ui/icons";
+import { ButtonLink } from "@/components/ui/button";
 import { Badge, Card, ListGroup, ListRow } from "@/components/ui/surface";
+import { route } from "@/lib/routes";
 import { getDictionary } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n/config";
 import { createClient } from "@/lib/supabase/server";
@@ -40,7 +37,6 @@ export default async function TodayPage({
   const firstName = profile?.display_name?.split(" ")[0] ?? "";
 
   const tools = [
-    { icon: <Clock className="size-4.5" />, ...pick(copy.tools, "metronome") },
     { icon: <Bolt className="size-4.5" />, ...pick(copy.tools, "readiness") },
     { icon: <Sparkle className="size-4.5" />, ...pick(copy.tools, "assistant") },
     { icon: <Users className="size-4.5" />, ...pick(copy.tools, "community") },
@@ -67,15 +63,15 @@ export default async function TodayPage({
         />
 
         <Card className="flex flex-col gap-4">
-          <div className="flex flex-col gap-3">
-            <Badge tone="accent" className="self-start">
-              {dict.common.inDevelopment}
-            </Badge>
-            <h2 className="text-title3 text-fg">{copy.emptyTitle}</h2>
+          <div className="flex flex-col gap-2">
+            <h2 className="text-title3 text-fg">{dict.workout.startCta}</h2>
             <p className="text-callout leading-relaxed text-fg-muted">
-              {copy.emptyBody}
+              {dict.workout.startBody}
             </p>
           </div>
+          <ButtonLink href={route(locale, "workout")} size="lg" fullWidth>
+            {dict.workout.startCta}
+          </ButtonLink>
         </Card>
 
         <ListGroup title={copy.toolsTitle}>

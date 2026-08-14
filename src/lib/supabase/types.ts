@@ -18,6 +18,112 @@ export type Database = {
   };
   public: {
     Tables: {
+      exercises: {
+        Row: {
+          attribution: string | null;
+          category: Database["public"]["Enums"]["muscle_group"];
+          created_at: string;
+          equipment: string | null;
+          id: string;
+          is_active: boolean;
+          license: string | null;
+          primary_muscles: Database["public"]["Enums"]["muscle_group"][];
+          secondary_muscles: Database["public"]["Enums"]["muscle_group"][];
+          slug: string;
+          source: Database["public"]["Enums"]["exercise_source"];
+          source_id: string | null;
+        };
+        Insert: {
+          attribution?: string | null;
+          category: Database["public"]["Enums"]["muscle_group"];
+          created_at?: string;
+          equipment?: string | null;
+          id?: string;
+          is_active?: boolean;
+          license?: string | null;
+          primary_muscles?: Database["public"]["Enums"]["muscle_group"][];
+          secondary_muscles?: Database["public"]["Enums"]["muscle_group"][];
+          slug: string;
+          source?: Database["public"]["Enums"]["exercise_source"];
+          source_id?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["exercises"]["Insert"]>;
+        Relationships: [];
+      };
+      exercise_translations: {
+        Row: {
+          description: string | null;
+          exercise_id: string;
+          locale: Database["public"]["Enums"]["app_locale"];
+          name: string;
+        };
+        Insert: {
+          description?: string | null;
+          exercise_id: string;
+          locale: Database["public"]["Enums"]["app_locale"];
+          name: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["exercise_translations"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      workout_sessions: {
+        Row: {
+          created_at: string;
+          ended_at: string | null;
+          id: string;
+          notes: string | null;
+          started_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          ended_at?: string | null;
+          id?: string;
+          notes?: string | null;
+          started_at?: string;
+          user_id: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["workout_sessions"]["Insert"]>;
+        Relationships: [];
+      };
+      workout_sets: {
+        Row: {
+          completed_at: string;
+          exercise_id: string | null;
+          exercise_name: string;
+          id: string;
+          position: number;
+          reps: number | null;
+          rest_seconds: number | null;
+          rir: number | null;
+          session_id: string;
+          tempo_concentric_s: number | null;
+          tempo_eccentric_s: number | null;
+          tempo_pause_s: number | null;
+          user_id: string;
+          weight_kg: number | null;
+        };
+        Insert: {
+          completed_at?: string;
+          exercise_id?: string | null;
+          exercise_name: string;
+          id?: string;
+          position?: number;
+          reps?: number | null;
+          rest_seconds?: number | null;
+          rir?: number | null;
+          session_id: string;
+          tempo_concentric_s?: number | null;
+          tempo_eccentric_s?: number | null;
+          tempo_pause_s?: number | null;
+          user_id: string;
+          weight_kg?: number | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["workout_sets"]["Insert"]>;
+        Relationships: [];
+      };
       leads: {
         Row: {
           created_at: string;
@@ -107,6 +213,21 @@ export type Database = {
     Functions: { [_ in never]: never };
     Enums: {
       app_locale: "pt-pt" | "pt-br";
+      exercise_source: "wger" | "axon";
+      muscle_group:
+        | "peito"
+        | "costas"
+        | "ombros"
+        | "biceps"
+        | "triceps"
+        | "antebraco"
+        | "abdomen"
+        | "quadriceps"
+        | "isquiotibiais"
+        | "gluteos"
+        | "gemeos"
+        | "lombar"
+        | "corpo_inteiro";
       experience_level: "beginner" | "intermediate" | "advanced";
       market_code: "PT" | "BR";
       theme_preference: "system" | "light" | "dark";
@@ -138,3 +259,7 @@ export type ExperienceLevel = Enums<"experience_level">;
 export type ThemePreference = Enums<"theme_preference">;
 export type UserPlan = Enums<"user_plan">;
 export type MarketCode = Enums<"market_code">;
+export type MuscleGroup = Enums<"muscle_group">;
+export type Exercise = Tables<"exercises">;
+export type WorkoutSession = Tables<"workout_sessions">;
+export type WorkoutSet = Tables<"workout_sets">;
