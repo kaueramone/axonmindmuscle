@@ -14,6 +14,8 @@ export type PendingSet = {
   rir: number | null;
   /** Segundos, para exercícios contados por tempo em vez de repetições. */
   duration_s: number | null;
+  /** Domínio de intensidade pretendido, nos exercícios de tempo. */
+  intensity_zone: "facil" | "moderado" | "forte" | null;
   tempo_eccentric_s: number;
   tempo_pause_s: number;
   tempo_concentric_s: number;
@@ -145,6 +147,17 @@ export async function logSet(
 
   write<PendingSet>(SETS_KEY, [...read<PendingSet>(SETS_KEY), linha]);
   return { persisted: false };
+}
+
+/**
+ * Esforço percebido da sessão. É melhor esforço: se falhar, perde-se o número
+ * e não a sessão — não vale a pena pôr isto na fila de escoamento.
+ */
+export async function setSessionRpe(sessionId: string, rpe: number): Promise<void> {
+  const supabase = createClient();
+  await comLimite(
+    supabase.from("workout_sessions").update({ rpe }).eq("id", sessionId),
+  );
 }
 
 export async function endSession(sessionId: string): Promise<void> {

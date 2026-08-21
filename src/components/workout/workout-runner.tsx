@@ -20,6 +20,7 @@ import {
   endSession,
   flushQueue,
   logSet,
+  setSessionRpe,
   startSession,
   tempoToColumns,
 } from "@/lib/workout/store";
@@ -35,7 +36,16 @@ export type ReadinessHint = {
 };
 
 type Step =
-  "picking" | "configuring" | "running" | "logging" | "resting" | "summary";
+  | "picking"
+  | "configuring"
+  | "running"
+  | "logging"
+  | "resting"
+  | "effort"
+  | "summary";
+
+type Zone = "facil" | "moderado" | "forte";
+const ZONES: Zone[] = ["facil", "moderado", "forte"];
 
 type LoggedSet = {
   exercise: string;
@@ -54,6 +64,65 @@ const PRESETS: { key: keyof Dict["workout"]["presets"]; tempo: Tempo }[] = [
 ];
 
 const REST_SECONDS = 120;
+
+/**
+ * Ajuste rápido de um número, com passo próprio. Existe para que mudar a carga
+ * entre séries seja um toque e não uma ida ao teclado — que é o que faz a
+ * diferença entre registar a pirâmide e desistir de a registar.
+ */
+function Stepper({
+  label,
+  value,
+  step,
+  min,
+  onChange,
+  labels,
+}: {
+  label: string;
+  value: number;
+  step: number;
+  min: number;
+  onChange: (v: number) => void;
+  labels: { less: string; more: string };
+}) {
+  const ajustar = (delta: number) =>
+    onChange(Math.max(min, Math.round((value + delta) * 100) / 100));
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-footnote font-medium text-fg-muted">{label}</span>
+      <div className="flex items-stretch gap-1.5">
+        <button
+          type="button"
+          aria-label={`${labels.less} ${label}`}
+          onClick={() => ajustar(-step)}
+          className="grid w-11 shrink-0 place-items-center rounded-md border border-hairline bg-surface text-title3 text-fg-muted transition-colors hover:text-fg active:scale-95"
+        >
+          −
+        </button>
+        <input
+          type="number"
+          inputMode="decimal"
+          step={step}
+          min={min}
+          value={value}
+          onChange={(event) =>
+            onChange(Math.max(min, Number(event.target.value) || 0))
+          }
+          className="data-mono h-13 min-w-0 flex-1 rounded-md border border-hairline bg-surface px-2 text-center text-title3 text-fg outline-none focus:border-accent"
+        />
+        <button
+          type="button"
+          aria-label={`${labels.more} ${label}`}
+          onClick={() => ajustar(step)}
+          className="grid w-11 shrink-0 place-items-center rounded-md border border-hairline bg-surface text-title3 text-fg-muted transition-colors hover:text-fg active:scale-95"
+        >
+          +
+        </button>
+      </div>
+    </div>
+  );
+}
 
 /** Durações sugeridas, em minutos, para exercícios contados por tempo. */
 const DURATION_PRESETS = [10, 20, 30, 45];
@@ -96,6 +165,8 @@ export function WorkoutRunner({
 
   /* Exercícios contados por tempo: o alvo é uma intenção, não um limite. */
   const [targetMinutes, setTargetMinutes] = useState(20);
+  const [zone, setZone] = useState<Zone>("moderado");
+  const [sessionRpe, setSessionRpe_local] = useState<number | null>(null);
   const loggedDuration = useRef(0);
   const timer = useTimer();
   const porTempo = exercise?.tracking === "time";
@@ -177,6 +248,7 @@ export function WorkoutRunner({
       reps: null,
       rir: null,
       duration_s: segundos,
+      intensity_zone: zone,
       ...tempoToColumns({ eccentric: 0, pause: 0, concentric: 0 }),
       rest_seconds: null,
     });
@@ -214,6 +286,7 @@ export function WorkoutRunner({
       reps,
       rir,
       duration_s: null,
+      intensity_zone: null,
       ...tempoToColumns(tempo),
       rest_seconds: null,
     });
@@ -246,8 +319,22 @@ export function WorkoutRunner({
     setBusy(true);
     if (sessionId) await endSession(sessionId);
     setBusy(false);
-    setStep("summary");
-  }, [sessionId]);
+    // O esforço percebido da sessão é o que, multiplicado pelos minutos, dá a
+    // carga — e é a única unidade que soma musculação e cardio. Perguntamo-lo
+    // num ecrã próprio para não competir com o resumo.
+    setStep(logged.length > 0 ? "effort" : "summary");
+  }, [sessionId, logged.length]);
+
+  const saveEffort = useCallback(
+    async (valor: number | null) => {
+      setBusy(true);
+      if (valor != null && sessionId) await setSessionRpe(sessionId, valor);
+      setSessionRpe_local(valor);
+      setBusy(false);
+      setStep("summary");
+    },
+    [sessionId],
+  );
 
   /* ---------------- Ecrã da série, em modo imersivo ---------------- */
 
@@ -458,6 +545,45 @@ export function WorkoutRunner({
                   <span className="text-title3 text-fg-subtle">
                     {copy.durationMinutes}
                   </span>
+                </div>
+
+                <div className="flex flex-col gap-2.5 border-t border-hairline pt-4">
+                  <div>
+                    <p className="text-callout font-medium text-fg">
+                      {copy.zone}
+                    </p>
+                    <p className="mt-1 text-caption leading-relaxed text-fg-subtle">
+                      {copy.zoneHint}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    {ZONES.map((z) => (
+                      <button
+                        key={z}
+                        type="button"
+                        aria-pressed={zone === z}
+                        onClick={() => setZone(z)}
+                        className={cn(
+                          "flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 rounded-lg border px-3.5 py-2.5 text-left transition-colors",
+                          zone === z
+                            ? "border-accent bg-accent-soft"
+                            : "border-hairline bg-surface hover:bg-surface-hover",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "text-callout font-semibold",
+                            zone === z ? "text-accent" : "text-fg",
+                          )}
+                        >
+                          {copy.zones[z]}
+                        </span>
+                        <span className="text-caption text-fg-subtle">
+                          {copy.zones[`${z}Hint` as keyof typeof copy.zones]}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="flex flex-col gap-2">
@@ -717,6 +843,32 @@ export function WorkoutRunner({
             </button>
           </Card>
 
+          {exercise && !porTempo ? (
+            /* Carga variável: a série seguinte pode subir ou descer sem sair
+               do treino nem voltar ao seletor de exercícios. */
+            <Card className="flex flex-col gap-3">
+              <p className="label-brand text-fg-subtle">{copy.nextLoad}</p>
+              <div className="grid grid-cols-2 gap-3">
+                <Stepper
+                  label={copy.weight}
+                  value={weight === "" ? 0 : Number(weight.replace(",", "."))}
+                  step={2.5}
+                  min={0}
+                  onChange={(v) => setWeight(v === 0 ? "" : String(v))}
+                  labels={{ less: copy.less, more: copy.more }}
+                />
+                <Stepper
+                  label={copy.targetReps}
+                  value={targetReps}
+                  step={1}
+                  min={1}
+                  onChange={setTargetReps}
+                  labels={{ less: copy.less, more: copy.more }}
+                />
+              </div>
+            </Card>
+          ) : null}
+
           <div className="flex flex-col gap-2.5">
             <Button size="lg" fullWidth onClick={beginSet} disabled={busy}>
               {copy.nextSet}
@@ -724,6 +876,14 @@ export function WorkoutRunner({
             <Button
               size="lg"
               variant="secondary"
+              fullWidth
+              onClick={() => setStep("configuring")}
+            >
+              {copy.adjustSet}
+            </Button>
+            <Button
+              size="lg"
+              variant="ghost"
               fullWidth
               onClick={() => setStep("picking")}
             >
@@ -762,6 +922,63 @@ export function WorkoutRunner({
         </div>
       ) : null}
 
+      {step === "effort" ? (
+        <div className="flex flex-col gap-6 py-6">
+          <div className="flex flex-col gap-2 text-center">
+            <h2 className="text-title1 text-fg">{copy.effortTitle}</h2>
+            <p className="mx-auto max-w-sm text-callout leading-relaxed text-fg-muted">
+              {copy.effortHint}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-6 gap-2">
+            {Array.from({ length: 11 }, (_, n) => (
+              <button
+                key={n}
+                type="button"
+                aria-pressed={sessionRpe === n}
+                onClick={() => setSessionRpe_local(n)}
+                className={cn(
+                  "data-mono h-14 rounded-md border text-title3 transition-colors",
+                  sessionRpe === n
+                    ? "border-accent bg-accent-soft text-accent"
+                    : "border-hairline bg-surface text-fg-muted hover:text-fg",
+                )}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex justify-between px-1 text-caption text-fg-subtle">
+            <span>{copy.effortLow}</span>
+            <span>{copy.effortMid}</span>
+            <span>{copy.effortHigh}</span>
+          </div>
+
+          <div className="flex flex-col gap-2.5">
+            <Button
+              size="lg"
+              fullWidth
+              disabled={sessionRpe == null || busy}
+              onClick={() => void saveEffort(sessionRpe)}
+            >
+              {busy ? <Spinner /> : null}
+              {copy.effortSave}
+            </Button>
+            <Button
+              size="lg"
+              variant="ghost"
+              fullWidth
+              disabled={busy}
+              onClick={() => void saveEffort(null)}
+            >
+              {copy.effortSkip}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       {step === "summary" ? (
         <div className="flex flex-col gap-6 py-6">
           <div className="flex flex-col items-center gap-3 text-center">
@@ -771,7 +988,12 @@ export function WorkoutRunner({
             <h2 className="text-title1 text-fg">{copy.summaryTitle}</h2>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div
+            className={cn(
+              "grid gap-3",
+              sessionRpe != null ? "grid-cols-2" : "grid-cols-3",
+            )}
+          >
             {[
               { label: copy.summarySets, value: String(logged.length) },
               {
@@ -786,6 +1008,20 @@ export function WorkoutRunner({
                 ),
                 unit: "min",
               },
+              ...(sessionRpe != null
+                ? [
+                    {
+                      label: copy.sessionLoad,
+                      value: String(
+                        Math.round(
+                          sessionRpe *
+                            Math.max(1, (Date.now() - startedAt) / 60000),
+                        ),
+                      ),
+                      unit: "",
+                    },
+                  ]
+                : []),
             ].map((stat) => (
               <Card key={stat.label} className="p-4 text-center">
                 <p className="data-mono text-title1 text-fg">

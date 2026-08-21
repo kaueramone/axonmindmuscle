@@ -3,7 +3,13 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { AppHeader } from "@/components/app/app-header";
+import { LoadSummary, type LoadDay, type ZoneRow } from "@/components/app/load-summary";
 import { MuscleVolume, type MuscleRow } from "@/components/app/muscle-volume";
+import {
+  ReadinessHistory,
+  type ReadinessDay,
+  type ReadinessSummary,
+} from "@/components/app/readiness-history";
 import { TimezoneSync } from "@/components/app/timezone-sync";
 import { Card } from "@/components/ui/surface";
 import { getDictionary } from "@/lib/i18n";
@@ -56,8 +62,15 @@ export default async function ProgressPage({
   const { from, to } = periodRange(period, timezone);
   const hoje = localDate(new Date(), timezone);
 
-  const [{ data: series }, { data: porMusculo }, { data: diasTreinados }] =
-    await Promise.all([
+  const [
+    { data: series },
+    { data: porMusculo },
+    { data: diasTreinados },
+    { data: prontidaoResumo },
+    { data: prontidaoDias },
+    { data: cargaDias },
+    { data: zonasCardio },
+  ] = await Promise.all([
       supabase
         .from("workout_sets_local")
         .select("exercise_name, weight_kg, reps, rir, volume_kg, completed_at, local_date")
@@ -70,6 +83,10 @@ export default async function ProgressPage({
         .from("workout_sets_local")
         .select("local_date")
         .gte("local_date", `${Number(hoje.slice(0, 4)) - 1}-01-01`),
+      supabase.rpc("readiness_summary", { p_from: from, p_to: to }),
+      supabase.rpc("readiness_history", { p_from: from, p_to: to }),
+      supabase.rpc("training_load_summary", { p_from: from, p_to: to }),
+      supabase.rpc("cardio_minutes_by_zone", { p_from: from, p_to: to }),
     ]);
 
   const linhas = series ?? [];
@@ -152,6 +169,22 @@ export default async function ProgressPage({
             {copy.streakHint}
           </p>
         ) : null}
+
+        <LoadSummary
+          dias={(cargaDias ?? []) as LoadDay[]}
+          zonas={(zonasCardio ?? []) as ZoneRow[]}
+          copy={copy}
+          zoneLabels={dict.workout.zones}
+        />
+
+        <ReadinessHistory
+          resumo={((prontidaoResumo ?? [])[0] ?? null) as ReadinessSummary | null}
+          dias={(prontidaoDias ?? []) as ReadinessDay[]}
+          copy={copy}
+          states={dict.readiness.states}
+          locale={locale}
+          mostrarDiario={period !== "year"}
+        />
 
         {linhas.length === 0 ? (
           <Card>

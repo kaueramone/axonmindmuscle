@@ -90,6 +90,7 @@ export type Database = {
           ended_at: string | null;
           id: string;
           notes: string | null;
+          rpe: number | null;
           started_at: string;
           user_id: string;
         };
@@ -98,6 +99,7 @@ export type Database = {
           ended_at?: string | null;
           id?: string;
           notes?: string | null;
+          rpe?: number | null;
           started_at?: string;
           user_id: string;
         };
@@ -111,6 +113,7 @@ export type Database = {
           exercise_id: string | null;
           exercise_name: string;
           id: string;
+          intensity_zone: Database["public"]["Enums"]["intensity_zone"] | null;
           position: number;
           reps: number | null;
           rest_seconds: number | null;
@@ -128,6 +131,7 @@ export type Database = {
           exercise_id?: string | null;
           exercise_name: string;
           id?: string;
+          intensity_zone?: Database["public"]["Enums"]["intensity_zone"] | null;
           position?: number;
           reps?: number | null;
           rest_seconds?: number | null;
@@ -274,6 +278,7 @@ export type Database = {
         Row: {
           completed_at: string;
           duration_s: number | null;
+          intensity_zone: Database["public"]["Enums"]["intensity_zone"] | null;
           exercise_id: string | null;
           exercise_name: string;
           id: string;
@@ -351,6 +356,43 @@ export type Database = {
           recent_muscles: Database["public"]["Enums"]["muscle_group"][];
         }[];
       };
+      training_load_summary: {
+        Args: { p_from: string; p_to: string };
+        Returns: {
+          dia: string;
+          sessoes: number;
+          minutos: number;
+          carga: number;
+          minutos_cardio: number;
+        }[];
+      };
+      cardio_minutes_by_zone: {
+        Args: { p_from: string; p_to: string };
+        Returns: {
+          zona: Database["public"]["Enums"]["intensity_zone"];
+          minutos: number;
+        }[];
+      };
+      readiness_history: {
+        Args: { p_from: string; p_to: string };
+        Returns: {
+          dia: string;
+          score: number;
+          estado: Database["public"]["Enums"]["readiness_state"];
+        }[];
+      };
+      readiness_summary: {
+        Args: { p_from: string; p_to: string };
+        Returns: {
+          dias_registados: number;
+          dias_forte: number;
+          dias_moderado: number;
+          dias_descanso: number;
+          score_medio: number;
+          score_melhor: number;
+          dia_melhor: string | null;
+        }[];
+      };
       training_sets_by_muscle: {
         Args: { p_from: string; p_to: string };
         Returns: {
@@ -375,6 +417,7 @@ export type Database = {
       exercise_source: "wger" | "axon";
       exercise_media_type: "image" | "video";
       exercise_tracking: "reps" | "time";
+      intensity_zone: "facil" | "moderado" | "forte";
       user_role: "member" | "admin";
       muscle_group:
         | "peito"
@@ -429,6 +472,7 @@ export type Exercise = Tables<"exercises">;
 export type ExerciseTranslation = Tables<"exercise_translations">;
 export type ExerciseMediaType = Enums<"exercise_media_type">;
 export type ExerciseTracking = Enums<"exercise_tracking">;
+export type IntensityZone = Enums<"intensity_zone">;
 export type UserRole = Enums<"user_role">;
 export type WorkoutSession = Tables<"workout_sessions">;
 export type WorkoutSet = Tables<"workout_sets">;
