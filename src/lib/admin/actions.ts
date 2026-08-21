@@ -4,7 +4,12 @@ import { revalidatePath } from "next/cache";
 
 import { locales } from "@/lib/i18n/config";
 import { createClient } from "@/lib/supabase/server";
-import type { ExerciseMediaType, MuscleGroup, UserRole } from "@/lib/supabase/types";
+import type {
+  ExerciseMediaType,
+  ExerciseTracking,
+  MuscleGroup,
+  UserRole,
+} from "@/lib/supabase/types";
 
 export type ExerciseTextos = {
   name: string;
@@ -22,6 +27,7 @@ export type ExercisePayload = {
   primaryMuscles: MuscleGroup[];
   secondaryMuscles: MuscleGroup[];
   isActive: boolean;
+  tracking: ExerciseTracking;
   mediaUrl: string | null;
   mediaType: ExerciseMediaType | null;
   textos: Record<string, ExerciseTextos>;
@@ -78,6 +84,7 @@ export async function saveExerciseAction(payload: ExercisePayload): Promise<Resu
     primary_muscles: payload.primaryMuscles,
     secondary_muscles: payload.secondaryMuscles,
     is_active: payload.isActive,
+    tracking: payload.tracking,
     media_url: payload.mediaUrl,
     media_type: payload.mediaUrl ? payload.mediaType : null,
     source: "axon" as const,

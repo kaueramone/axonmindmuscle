@@ -17,6 +17,8 @@ export type ExerciseOption = {
   /** Imagem ou vídeo de demonstração, carregado no painel administrativo. */
   mediaUrl: string | null;
   mediaType: "image" | "video" | null;
+  /** "time" troca o metrónomo por um cronómetro de duração livre. */
+  tracking: "reps" | "time";
   description: string | null;
   procedure: string | null;
   breathing: string | null;

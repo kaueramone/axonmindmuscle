@@ -24,6 +24,7 @@ import {
   tempoToColumns,
 } from "@/lib/workout/store";
 import { useMetronome, type Tempo } from "@/lib/workout/use-metronome";
+import { formatDuration, useTimer } from "@/lib/workout/use-timer";
 import type { ReadinessState } from "@/lib/readiness/score";
 
 export type ReadinessHint = {
@@ -33,13 +34,16 @@ export type ReadinessHint = {
   avoidMuscles: string[];
 };
 
-type Step = "picking" | "configuring" | "running" | "logging" | "resting" | "summary";
+type Step =
+  "picking" | "configuring" | "running" | "logging" | "resting" | "summary";
 
 type LoggedSet = {
   exercise: string;
   weight: number | null;
   reps: number;
   volume: number;
+  /** Segundos, quando o exercício é contado por tempo. */
+  duration?: number;
 };
 
 const PRESETS: { key: keyof Dict["workout"]["presets"]; tempo: Tempo }[] = [
@@ -50,6 +54,9 @@ const PRESETS: { key: keyof Dict["workout"]["presets"]; tempo: Tempo }[] = [
 ];
 
 const REST_SECONDS = 120;
+
+/** Durações sugeridas, em minutos, para exercícios contados por tempo. */
+const DURATION_PRESETS = [10, 20, 30, 45];
 
 export function WorkoutRunner({
   locale,
@@ -86,6 +93,12 @@ export function WorkoutRunner({
   const [restLeft, setRestLeft] = useState(REST_SECONDS);
   const [startedAt] = useState(() => Date.now());
   const actualReps = useRef(0);
+
+  /* Exercícios contados por tempo: o alvo é uma intenção, não um limite. */
+  const [targetMinutes, setTargetMinutes] = useState(20);
+  const loggedDuration = useRef(0);
+  const timer = useTimer();
+  const porTempo = exercise?.tracking === "time";
 
   const metronome = useMetronome({
     tempo,
@@ -132,14 +145,57 @@ export function WorkoutRunner({
     }
     setBusy(false);
     setStep("running");
-    metronome.start();
-  }, [sessionId, userId, metronome]);
+    if (porTempo) {
+      timer.reset();
+      timer.start();
+    } else {
+      metronome.start();
+    }
+  }, [sessionId, userId, metronome, timer, porTempo]);
 
   const stopSet = useCallback(() => {
     actualReps.current = metronome.rep;
     metronome.stop();
     setStep("logging");
   }, [metronome]);
+
+  /** Fecha o cronómetro e grava logo a duração: não há carga nem RIR a pedir. */
+  const stopTimed = useCallback(async () => {
+    const segundos = timer.stop();
+    loggedDuration.current = segundos;
+
+    if (!exercise || !sessionId) return;
+    setBusy(true);
+
+    const { persisted } = await logSet({
+      session_id: sessionId,
+      user_id: userId,
+      exercise_id: exercise.id,
+      exercise_name: exercise.name,
+      position: logged.length + 1,
+      weight_kg: null,
+      reps: null,
+      rir: null,
+      duration_s: segundos,
+      ...tempoToColumns({ eccentric: 0, pause: 0, concentric: 0 }),
+      rest_seconds: null,
+    });
+
+    setQueued(!persisted);
+    setLogged((prev) => [
+      ...prev,
+      {
+        exercise: exercise.name,
+        weight: null,
+        reps: 0,
+        volume: 0,
+        duration: segundos,
+      },
+    ]);
+    setBusy(false);
+    setRestLeft(REST_SECONDS);
+    setStep("resting");
+  }, [timer, exercise, sessionId, userId, logged.length]);
 
   const saveSet = useCallback(async () => {
     if (!exercise || !sessionId) return;
@@ -157,6 +213,7 @@ export function WorkoutRunner({
       weight_kg: Number.isFinite(carga) ? carga : null,
       reps,
       rir,
+      duration_s: null,
       ...tempoToColumns(tempo),
       rest_seconds: null,
     });
@@ -174,7 +231,16 @@ export function WorkoutRunner({
     setBusy(false);
     setRestLeft(REST_SECONDS);
     setStep("resting");
-  }, [exercise, sessionId, userId, weight, targetReps, rir, tempo, logged.length]);
+  }, [
+    exercise,
+    sessionId,
+    userId,
+    weight,
+    targetReps,
+    rir,
+    tempo,
+    logged.length,
+  ]);
 
   const finish = useCallback(async () => {
     setBusy(true);
@@ -184,6 +250,81 @@ export function WorkoutRunner({
   }, [sessionId]);
 
   /* ---------------- Ecrã da série, em modo imersivo ---------------- */
+
+  /* ---------------- Ecrã do cronómetro, em modo imersivo ---------------- */
+
+  if (step === "running" && porTempo) {
+    const alvo = targetMinutes * 60;
+    const progresso = Math.min(1, timer.elapsed / alvo);
+    const atingiu = timer.elapsed >= alvo;
+
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col bg-bg safe-t safe-b">
+        <div className="flex items-center justify-between px-5 py-4">
+          <span className="truncate text-subhead text-fg-muted">
+            {exercise?.name}
+          </span>
+          <Badge tone={atingiu ? "success" : "accent"}>
+            {atingiu ? copy.timeDone : copy.freeTime}
+          </Badge>
+        </div>
+
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-8 px-5">
+          <div className="flex flex-col items-center gap-2">
+            <p className="label-brand text-fg-subtle">{copy.timeElapsed}</p>
+            <p
+              className={cn(
+                "data-mono text-[4.5rem] leading-none tabular-nums transition-colors duration-300",
+                atingiu ? "text-success" : "text-fg",
+              )}
+            >
+              {formatDuration(timer.elapsed)}
+            </p>
+          </div>
+
+          <div className="flex w-full max-w-sm flex-col gap-2">
+            <span className="h-1.5 w-full overflow-hidden rounded-full bg-surface-strong">
+              <span
+                className="block h-full rounded-full bg-accent transition-[width] duration-500 ease-linear"
+                style={{ width: `${progresso * 100}%` }}
+              />
+            </span>
+            <span className="flex justify-between text-caption text-fg-subtle">
+              <span>{copy.timeTarget}</span>
+              <span className="data-mono">{formatDuration(alvo)}</span>
+            </span>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2.5 px-5 pb-4">
+          {timer.running ? (
+            <Button
+              size="lg"
+              variant="secondary"
+              fullWidth
+              onClick={timer.pause}
+            >
+              {copy.pause}
+            </Button>
+          ) : (
+            <Button size="lg" fullWidth onClick={timer.resume}>
+              {copy.resume}
+            </Button>
+          )}
+          <Button
+            size="lg"
+            variant="ghost"
+            fullWidth
+            onClick={stopTimed}
+            disabled={busy}
+          >
+            {busy ? <Spinner /> : null}
+            {copy.stopTimed}
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (step === "running") {
     const fase = copy.phases[metronome.phase];
@@ -223,7 +364,12 @@ export function WorkoutRunner({
               {copy.resume}
             </Button>
           ) : (
-            <Button size="lg" variant="secondary" fullWidth onClick={metronome.pause}>
+            <Button
+              size="lg"
+              variant="secondary"
+              fullWidth
+              onClick={metronome.pause}
+            >
               {copy.pause}
             </Button>
           )}
@@ -268,7 +414,8 @@ export function WorkoutRunner({
               <strong className="font-semibold">
                 {dict.readiness.states[readiness.state]}.
               </strong>{" "}
-              {dict.readiness.adjustLoad} {Math.round(readiness.loadDelta * 100)}% ·{" "}
+              {dict.readiness.adjustLoad}{" "}
+              {Math.round(readiness.loadDelta * 100)}% ·{" "}
               {dict.readiness.adjustRir} +{readiness.rirDelta}
             </Alert>
           ) : null}
@@ -281,121 +428,199 @@ export function WorkoutRunner({
 
           <ExerciseBrief exercise={exercise} copy={copy} />
 
-          <Card className="flex flex-col gap-4">
-            <div>
-              <h3 className="text-headline font-semibold text-fg">{copy.cadence}</h3>
-              <p className="mt-1 text-footnote text-fg-subtle">{copy.cadenceHint}</p>
-            </div>
+          {porTempo ? (
+            <>
+              <Card className="flex flex-col gap-5">
+                <div>
+                  <h3 className="text-headline font-semibold text-fg">
+                    {copy.duration}
+                  </h3>
+                  <p className="mt-1 text-footnote leading-relaxed text-fg-subtle">
+                    {copy.durationHint}
+                  </p>
+                </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
-              {PRESETS.map((preset) => {
-                const ativo =
-                  preset.tempo.eccentric === tempo.eccentric &&
-                  preset.tempo.pause === tempo.pause &&
-                  preset.tempo.concentric === tempo.concentric;
-                return (
-                  <button
-                    key={preset.key}
-                    type="button"
-                    onClick={() => setTempo(preset.tempo)}
-                    className={cn(
-                      "flex flex-col items-start rounded-lg border p-3.5 text-left transition-all active:scale-[0.98]",
-                      ativo
-                        ? "border-accent bg-accent-soft"
-                        : "border-hairline bg-surface hover:bg-surface-hover",
-                    )}
-                  >
-                    <span className="text-callout font-semibold text-fg">
-                      {copy.presets[preset.key]}
-                    </span>
-                    <span className="data-mono text-footnote text-fg-subtle">
-                      {copy.presets[`${preset.key}Detail` as keyof typeof copy.presets]}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+                <div className="flex items-baseline gap-3">
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={180}
+                    value={targetMinutes}
+                    onChange={(event) =>
+                      setTargetMinutes(
+                        Math.max(1, Number(event.target.value) || 1),
+                      )
+                    }
+                    aria-label={copy.duration}
+                    className="data-mono h-16 w-32 rounded-md border border-hairline bg-surface px-4 text-[2rem] leading-none text-fg outline-none focus:border-accent"
+                  />
+                  <span className="text-title3 text-fg-subtle">
+                    {copy.durationMinutes}
+                  </span>
+                </div>
 
-            <div className="grid grid-cols-3 gap-2.5">
-              {(["eccentric", "pause", "concentric"] as const).map((fase) => (
-                <label key={fase} className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-2">
                   <span className="text-caption text-fg-subtle">
-                    {copy.phaseNames[fase]}
+                    {copy.durationPresets}
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {DURATION_PRESETS.map((minutos) => (
+                      <button
+                        key={minutos}
+                        type="button"
+                        aria-pressed={targetMinutes === minutos}
+                        onClick={() => setTargetMinutes(minutos)}
+                        className={cn(
+                          "data-mono rounded-full border px-4 py-2 text-subhead transition-colors",
+                          targetMinutes === minutos
+                            ? "border-accent bg-accent-soft text-accent"
+                            : "border-hairline bg-surface text-fg-subtle hover:text-fg",
+                        )}
+                      >
+                        {minutos} {copy.durationMinutes}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </Card>
+
+              <p className="text-caption text-fg-subtle">{copy.keepAwake}</p>
+            </>
+          ) : (
+            <>
+              <Card className="flex flex-col gap-4">
+                <div>
+                  <h3 className="text-headline font-semibold text-fg">
+                    {copy.cadence}
+                  </h3>
+                  <p className="mt-1 text-footnote text-fg-subtle">
+                    {copy.cadenceHint}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  {PRESETS.map((preset) => {
+                    const ativo =
+                      preset.tempo.eccentric === tempo.eccentric &&
+                      preset.tempo.pause === tempo.pause &&
+                      preset.tempo.concentric === tempo.concentric;
+                    return (
+                      <button
+                        key={preset.key}
+                        type="button"
+                        onClick={() => setTempo(preset.tempo)}
+                        className={cn(
+                          "flex flex-col items-start rounded-lg border p-3.5 text-left transition-all active:scale-[0.98]",
+                          ativo
+                            ? "border-accent bg-accent-soft"
+                            : "border-hairline bg-surface hover:bg-surface-hover",
+                        )}
+                      >
+                        <span className="text-callout font-semibold text-fg">
+                          {copy.presets[preset.key]}
+                        </span>
+                        <span className="data-mono text-footnote text-fg-subtle">
+                          {
+                            copy.presets[
+                              `${preset.key}Detail` as keyof typeof copy.presets
+                            ]
+                          }
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="grid grid-cols-3 gap-2.5">
+                  {(["eccentric", "pause", "concentric"] as const).map(
+                    (fase) => (
+                      <label key={fase} className="flex flex-col gap-1.5">
+                        <span className="text-caption text-fg-subtle">
+                          {copy.phaseNames[fase]}
+                        </span>
+                        <input
+                          type="number"
+                          min={0}
+                          max={10}
+                          value={tempo[fase]}
+                          onChange={(event) =>
+                            setTempo({
+                              ...tempo,
+                              [fase]: Number(event.target.value),
+                            })
+                          }
+                          className="data-mono h-12 w-full rounded-md border border-hairline bg-surface px-3 text-center text-title3 text-fg outline-none focus:border-accent"
+                        />
+                      </label>
+                    ),
+                  )}
+                </div>
+              </Card>
+
+              <Card className="grid grid-cols-2 gap-4">
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-footnote font-medium text-fg-muted">
+                    {copy.targetReps}
                   </span>
                   <input
                     type="number"
-                    min={0}
-                    max={10}
-                    value={tempo[fase]}
+                    min={1}
+                    max={50}
+                    value={targetReps}
                     onChange={(event) =>
-                      setTempo({ ...tempo, [fase]: Number(event.target.value) })
+                      setTargetReps(Number(event.target.value))
                     }
-                    className="data-mono h-12 w-full rounded-md border border-hairline bg-surface px-3 text-center text-title3 text-fg outline-none focus:border-accent"
+                    className="data-mono h-13 rounded-md border border-hairline bg-surface px-4 text-title3 text-fg outline-none focus:border-accent"
                   />
                 </label>
-              ))}
-            </div>
-          </Card>
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-footnote font-medium text-fg-muted">
+                    {copy.weight}
+                  </span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.5"
+                    min={0}
+                    value={weight}
+                    onChange={(event) => setWeight(event.target.value)}
+                    className="data-mono h-13 rounded-md border border-hairline bg-surface px-4 text-title3 text-fg outline-none focus:border-accent"
+                  />
+                </label>
+              </Card>
 
-          <Card className="grid grid-cols-2 gap-4">
-            <label className="flex flex-col gap-1.5">
-              <span className="text-footnote font-medium text-fg-muted">
-                {copy.targetReps}
-              </span>
-              <input
-                type="number"
-                min={1}
-                max={50}
-                value={targetReps}
-                onChange={(event) => setTargetReps(Number(event.target.value))}
-                className="data-mono h-13 rounded-md border border-hairline bg-surface px-4 text-title3 text-fg outline-none focus:border-accent"
-              />
-            </label>
-            <label className="flex flex-col gap-1.5">
-              <span className="text-footnote font-medium text-fg-muted">
-                {copy.weight}
-              </span>
-              <input
-                type="number"
-                inputMode="decimal"
-                step="0.5"
-                min={0}
-                value={weight}
-                onChange={(event) => setWeight(event.target.value)}
-                className="data-mono h-13 rounded-md border border-hairline bg-surface px-4 text-title3 text-fg outline-none focus:border-accent"
-              />
-            </label>
-          </Card>
+              <div className="flex flex-wrap gap-2">
+                {(
+                  [
+                    ["sound", sound, setSound, copy.sound],
+                    ["haptics", haptics, setHaptics, copy.haptics],
+                  ] as const
+                ).map(([chave, valor, definir, etiqueta]) => (
+                  <button
+                    key={chave}
+                    type="button"
+                    onClick={() => definir(!valor)}
+                    aria-pressed={valor}
+                    className={cn(
+                      "rounded-full border px-4 py-2 text-subhead transition-colors",
+                      valor
+                        ? "border-accent bg-accent-soft text-accent"
+                        : "border-hairline bg-surface text-fg-subtle",
+                    )}
+                  >
+                    {etiqueta}
+                  </button>
+                ))}
+              </div>
 
-          <div className="flex flex-wrap gap-2">
-            {(
-              [
-                ["sound", sound, setSound, copy.sound],
-                ["haptics", haptics, setHaptics, copy.haptics],
-              ] as const
-            ).map(([chave, valor, definir, etiqueta]) => (
-              <button
-                key={chave}
-                type="button"
-                onClick={() => definir(!valor)}
-                aria-pressed={valor}
-                className={cn(
-                  "rounded-full border px-4 py-2 text-subhead transition-colors",
-                  valor
-                    ? "border-accent bg-accent-soft text-accent"
-                    : "border-hairline bg-surface text-fg-subtle",
-                )}
-              >
-                {etiqueta}
-              </button>
-            ))}
-          </div>
-
-          <p className="text-caption text-fg-subtle">{copy.keepAwake}</p>
+              <p className="text-caption text-fg-subtle">{copy.keepAwake}</p>
+            </>
+          )}
 
           <Button size="lg" fullWidth onClick={beginSet} disabled={busy}>
             {busy ? <Spinner /> : null}
-            {copy.beginSet}
+            {porTempo ? copy.startTimed : copy.beginSet}
           </Button>
         </div>
       ) : null}
@@ -443,7 +668,9 @@ export function WorkoutRunner({
 
           <Card className="flex flex-col gap-3">
             <div>
-              <p className="text-footnote font-medium text-fg-muted">{copy.rir}</p>
+              <p className="text-footnote font-medium text-fg-muted">
+                {copy.rir}
+              </p>
               <p className="mt-1 text-caption text-fg-subtle">{copy.rirHint}</p>
             </div>
             <div className="flex gap-2">
@@ -502,7 +729,13 @@ export function WorkoutRunner({
             >
               {copy.changeExercise}
             </Button>
-            <Button size="lg" variant="ghost" fullWidth onClick={finish} disabled={busy}>
+            <Button
+              size="lg"
+              variant="ghost"
+              fullWidth
+              onClick={finish}
+              disabled={busy}
+            >
               {copy.endWorkout}
             </Button>
           </div>
@@ -514,10 +747,13 @@ export function WorkoutRunner({
                   key={index}
                   className="flex items-baseline justify-between gap-3 text-subhead"
                 >
-                  <span className="truncate text-fg-muted">{linha.exercise}</span>
+                  <span className="truncate text-fg-muted">
+                    {linha.exercise}
+                  </span>
                   <span className="data-mono shrink-0 text-fg">
-                    {linha.weight ? `${linha.weight} kg × ` : ""}
-                    {linha.reps}
+                    {linha.duration != null
+                      ? formatDuration(linha.duration)
+                      : `${linha.weight ? `${linha.weight} kg × ` : ""}${linha.reps}`}
                   </span>
                 </div>
               ))}
@@ -545,7 +781,9 @@ export function WorkoutRunner({
               },
               {
                 label: copy.summaryDuration,
-                value: String(Math.max(1, Math.round((Date.now() - startedAt) / 60000))),
+                value: String(
+                  Math.max(1, Math.round((Date.now() - startedAt) / 60000)),
+                ),
                 unit: "min",
               },
             ].map((stat) => (
@@ -563,7 +801,11 @@ export function WorkoutRunner({
             ))}
           </div>
 
-          <ButtonLink href={route(locale, "today")} size="lg" className="w-full">
+          <ButtonLink
+            href={route(locale, "today")}
+            size="lg"
+            className="w-full"
+          >
             {copy.summaryClose}
           </ButtonLink>
         </div>

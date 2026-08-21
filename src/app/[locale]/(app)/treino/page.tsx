@@ -36,7 +36,7 @@ export default async function WorkoutPage({
   const [{ data: linhas }, { data: nomes }] = await Promise.all([
     supabase
       .from("exercises")
-      .select("id, category, equipment, source, media_url, media_type")
+      .select("id, category, equipment, source, media_url, media_type, tracking")
       .eq("is_active", true)
       .order("category"),
     supabase
@@ -56,6 +56,7 @@ export default async function WorkoutPage({
         category: linha.category as string,
         equipment: linha.equipment,
         attributed: linha.source === "wger",
+        tracking: linha.tracking,
         mediaUrl: linha.media_url,
         mediaType: linha.media_type,
         description: texto?.description ?? null,

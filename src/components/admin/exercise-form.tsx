@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, Card, Spinner } from "@/components/ui/surface";
 import { saveExerciseAction, type ExercisePayload, type ExerciseTextos } from "@/lib/admin/actions";
 import { locales, type Locale } from "@/lib/i18n/config";
-import type { ExerciseMediaType, MuscleGroup } from "@/lib/supabase/types";
+import type { ExerciseMediaType, ExerciseTracking, MuscleGroup } from "@/lib/supabase/types";
 import { cn } from "@/lib/utils";
 
 export const MUSCLE_LABELS: Record<MuscleGroup, string> = {
@@ -259,6 +259,44 @@ export function ExerciseForm({
           />
         </div>
 
+        <div className="flex flex-col gap-2">
+          <span className="text-footnote font-medium text-fg-muted">Como se conta</span>
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                ["reps", "Repetições", "Séries com cadência e metrónomo."],
+                ["time", "Tempo", "Cronómetro livre, sem carga nem repetições."],
+              ] as const
+            ).map(([valor, rotulo, nota]) => (
+              <button
+                key={valor}
+                type="button"
+                aria-pressed={dados.tracking === valor}
+                onClick={() => {
+                  setDados((d) => ({ ...d, tracking: valor as ExerciseTracking }));
+                  setGuardado(false);
+                }}
+                className={cn(
+                  "flex flex-col items-start rounded-lg border px-3.5 py-2.5 text-left transition-colors",
+                  dados.tracking === valor
+                    ? "border-accent bg-accent-soft"
+                    : "border-hairline bg-surface hover:bg-surface-hover",
+                )}
+              >
+                <span
+                  className={cn(
+                    "text-subhead font-semibold",
+                    dados.tracking === valor ? "text-accent" : "text-fg",
+                  )}
+                >
+                  {rotulo}
+                </span>
+                <span className="text-caption text-fg-subtle">{nota}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <label className="flex items-center gap-3">
           <input
             type="checkbox"
@@ -336,7 +374,7 @@ export function ExerciseForm({
         </Campo>
 
         <Campo
-          label={aba === "pt-pt" ? "Sentimento de acção" : "Sentimento de ação"}
+          label="Sentimento de ação"
           hint="O que se deve sentir, e onde."
         >
           <textarea

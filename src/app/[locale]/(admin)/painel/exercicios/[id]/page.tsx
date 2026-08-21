@@ -45,6 +45,7 @@ export default async function EditExercisePage({
     primaryMuscles: linha.primary_muscles ?? [],
     secondaryMuscles: linha.secondary_muscles ?? [],
     isActive: linha.is_active,
+    tracking: linha.tracking,
     mediaUrl: linha.media_url,
     mediaType: linha.media_type,
     textos: mapa,

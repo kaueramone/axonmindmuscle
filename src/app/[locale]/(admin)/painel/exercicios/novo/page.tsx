@@ -32,6 +32,7 @@ export default async function NewExercisePage({
     primaryMuscles: [],
     secondaryMuscles: [],
     isActive: true,
+    tracking: "reps",
     mediaUrl: null,
     mediaType: null,
     textos: { "pt-pt": { ...VAZIO }, "pt-br": { ...VAZIO } },

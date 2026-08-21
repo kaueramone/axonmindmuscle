@@ -12,6 +12,8 @@ export type PendingSet = {
   weight_kg: number | null;
   reps: number | null;
   rir: number | null;
+  /** Segundos, para exercícios contados por tempo em vez de repetições. */
+  duration_s: number | null;
   tempo_eccentric_s: number;
   tempo_pause_s: number;
   tempo_concentric_s: number;

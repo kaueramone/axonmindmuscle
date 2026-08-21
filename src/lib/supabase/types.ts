@@ -35,6 +35,7 @@ export type Database = {
           slug: string;
           source: Database["public"]["Enums"]["exercise_source"];
           source_id: string | null;
+          tracking: Database["public"]["Enums"]["exercise_tracking"];
           updated_at: string;
         };
         Insert: {
@@ -53,6 +54,7 @@ export type Database = {
           slug: string;
           source?: Database["public"]["Enums"]["exercise_source"];
           source_id?: string | null;
+          tracking?: Database["public"]["Enums"]["exercise_tracking"];
           updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["exercises"]["Insert"]>;
@@ -105,6 +107,7 @@ export type Database = {
       workout_sets: {
         Row: {
           completed_at: string;
+          duration_s: number | null;
           exercise_id: string | null;
           exercise_name: string;
           id: string;
@@ -121,6 +124,7 @@ export type Database = {
         };
         Insert: {
           completed_at?: string;
+          duration_s?: number | null;
           exercise_id?: string | null;
           exercise_name: string;
           id?: string;
@@ -269,6 +273,7 @@ export type Database = {
       workout_sets_local: {
         Row: {
           completed_at: string;
+          duration_s: number | null;
           exercise_id: string | null;
           exercise_name: string;
           id: string;
@@ -369,6 +374,7 @@ export type Database = {
       readiness_state: "strong" | "moderate" | "rest";
       exercise_source: "wger" | "axon";
       exercise_media_type: "image" | "video";
+      exercise_tracking: "reps" | "time";
       user_role: "member" | "admin";
       muscle_group:
         | "peito"
@@ -422,6 +428,7 @@ export type MuscleGroup = Enums<"muscle_group">;
 export type Exercise = Tables<"exercises">;
 export type ExerciseTranslation = Tables<"exercise_translations">;
 export type ExerciseMediaType = Enums<"exercise_media_type">;
+export type ExerciseTracking = Enums<"exercise_tracking">;
 export type UserRole = Enums<"user_role">;
 export type WorkoutSession = Tables<"workout_sessions">;
 export type WorkoutSet = Tables<"workout_sets">;
