@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 import { useTheme } from "@/components/theme";
 
@@ -57,10 +57,13 @@ function carregarScript(): Promise<void> {
 export const turnstileEnabled = Boolean(SITE_KEY);
 
 /**
- * Widget da Cloudflare. O token vai num campo escondido chamado
- * `cf-turnstile-response`, o nome que o Supabase Auth espera. Os tokens são
- * de uso único: sempre que `resetSignal` muda, o widget é reposto para que
- * uma segunda tentativa não envie um token já gasto.
+ * Widget da Cloudflare. O próprio widget injecta no contentor um campo
+ * escondido chamado `cf-turnstile-response` — o nome que o Supabase Auth
+ * espera — por isso não acrescentamos nenhum: dois campos com o mesmo nome
+ * no mesmo formulário seriam ambíguos do lado do servidor.
+ *
+ * Os tokens são de uso único: sempre que `resetSignal` muda, o widget é
+ * reposto para que uma segunda tentativa não envie um token já gasto.
  */
 export function Turnstile({
   resetSignal = 0,
@@ -73,7 +76,6 @@ export function Turnstile({
 }) {
   const container = useRef<HTMLDivElement>(null);
   const widgetId = useRef<string | null>(null);
-  const [token, setToken] = useState("");
   const { resolved } = useTheme();
 
   useEffect(() => {
@@ -92,12 +94,7 @@ export function Turnstile({
           sitekey: SITE_KEY,
           theme: resolved === "dark" ? "dark" : "light",
           language: locale === "pt-br" ? "pt-br" : "pt",
-          callback: (valor) => {
-            setToken(valor);
-            onToken?.(valor);
-          },
-          "expired-callback": () => setToken(""),
-          "error-callback": () => setToken(""),
+          callback: (valor) => onToken?.(valor),
         });
       })
       .catch(() => {
@@ -115,15 +112,9 @@ export function Turnstile({
   useEffect(() => {
     if (!resetSignal || !widgetId.current || !window.turnstile) return;
     window.turnstile.reset(widgetId.current);
-    setToken("");
   }, [resetSignal]);
 
   if (!SITE_KEY) return null;
 
-  return (
-    <div className="flex flex-col gap-2">
-      <div ref={container} className="min-h-[65px]" />
-      <input type="hidden" name="cf-turnstile-response" value={token} readOnly />
-    </div>
-  );
+  return <div ref={container} className="min-h-[65px]" />;
 }
