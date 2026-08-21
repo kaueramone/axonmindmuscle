@@ -36,12 +36,15 @@ export async function proxy(request: NextRequest) {
   const locale = firstSegment;
   const routeSegment = pathname.split("/")[2] ?? "";
 
-  // O painel administrativo vive num subdomínio próprio mas é servido pela
-  // mesma aplicação: painel.dominio/<algo> reescreve para /<locale>/painel/<algo>.
-  // As rotas de autenticação ficam de fora para que o login funcione lá também.
+  // O painel administrativo vive num subdomínio próprio, servido pela mesma
+  // aplicação. Nesse subdomínio só existem duas coisas: as rotas de
+  // autenticação — o painel tem sessão própria, porque os cookies do Supabase
+  // são gravados por host e não atravessam para cá — e o painel em si. Tudo o
+  // resto (a raiz, um /hoje devolvido pelo OAuth, um link antigo) vai parar ao
+  // painel em vez de dar 404.
   const host = request.headers.get("host")?.split(":")[0]?.toLowerCase() ?? "";
   const noSubdominioPainel = host.startsWith("painel.");
-  const reescreverParaPainel =
+  const forcarPainel =
     noSubdominioPainel &&
     routeSegment !== segments.admin &&
     !authSegments.includes(routeSegment);
@@ -77,12 +80,13 @@ export async function proxy(request: NextRequest) {
     return redirect;
   }
 
-  if (reescreverParaPainel) {
+  if (forcarPainel) {
     const url = request.nextUrl.clone();
-    url.pathname = `/${locale}/${segments.admin}${pathname.slice(locale.length + 1)}`;
-    const rewrite = NextResponse.rewrite(url, { request });
-    response.cookies.getAll().forEach((cookie) => rewrite.cookies.set(cookie));
-    return rewrite;
+    url.pathname = `/${locale}/${segments.admin}`;
+    url.search = "";
+    const redirect = NextResponse.redirect(url);
+    response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+    return redirect;
   }
 
   return response;

@@ -18,9 +18,13 @@ export async function requireAdmin(locale: Locale) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Absoluto de propósito: no subdomínio painel. um caminho relativo
-  // manteria o visitante do lado errado do domínio.
-  if (!user) redirect(`${SITE_URL}${route(locale, "signIn")}`);
+  // Relativo de propósito: os cookies do Supabase são gravados por host, por
+  // isso a sessão do site não vale no subdomínio do painel. Quem chega aqui
+  // sem sessão entra no login deste mesmo host e volta ao painel a seguir.
+  if (!user) {
+    const destino = encodeURIComponent(route(locale, "admin"));
+    redirect(`${route(locale, "signIn")}?redirect=${destino}`);
+  }
 
   const { data: perfil } = await supabase
     .from("profiles")
@@ -28,6 +32,8 @@ export async function requireAdmin(locale: Locale) {
     .eq("id", user.id)
     .maybeSingle();
 
+  // Absoluto: quem tem sessão mas não é administrador não tem nada que fazer
+  // neste subdomínio — vai para o produto, no domínio principal.
   if (perfil?.role !== "admin") redirect(`${SITE_URL}${route(locale, "today")}`);
 
   return { supabase, user, perfil };

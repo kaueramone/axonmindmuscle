@@ -235,11 +235,26 @@ Desenvolvido por [kaueramone.dev](https://kaueramone.dev)
 
 ## Painel administrativo
 
-Vive em `painel.<domínio>` e é servido pela mesma aplicação. O `proxy.ts`
-reescreve `painel.dominio/<algo>` para `/<locale>/painel/<algo>`; as rotas de
-autenticação ficam de fora dessa reescrita para que o login funcione também no
-subdomínio. Sem domínio configurado, o painel continua acessível em
-`/<locale>/painel`.
+Vive em `painel.<domínio>` e é servido pela mesma aplicação. Sem domínio
+configurado, continua acessível em `/<locale>/painel`.
+
+**Sessão própria.** Os cookies de autenticação do Supabase são gravados por
+host, sem atributo `Domain`, portanto a sessão do site não atravessa para o
+subdomínio — o painel vê um visitante anónimo por muito que a pessoa esteja
+autenticada em `www`. Em vez de alargar o cookie a `.<domínio>`, que o tornaria
+legível por qualquer subdomínio futuro e mexeria no caminho de autenticação de
+todos os utilizadores, o painel tem o seu próprio login no seu próprio host.
+
+No subdomínio só existem duas coisas: as rotas de autenticação e o painel.
+Qualquer outro caminho — a raiz, um `/hoje` devolvido pelo OAuth, um link
+antigo — é redirecionado para `/<locale>/painel`, em vez de dar 404. Quem
+chega sem sessão vai ao login **deste** host e volta ao painel a seguir; quem
+tem sessão mas não é administrador é enviado para o produto, no domínio
+principal, com um redirecionamento absoluto.
+
+Consequência prática: o login com Google feito a partir do painel volta a
+`painel.<domínio>/auth/callback`, por isso `https://painel.<domínio>/**` tem
+de estar na lista de *Redirect URLs* do Supabase.
 
 **Controlo de acesso.** `profiles.role` (`member` | `admin`) decide quem entra.
 São três camadas independentes:
@@ -324,6 +339,15 @@ A verificação do token acontece no Supabase Auth, não na aplicação. É de
 propósito: se fosse a aplicação a validar, alguém podia falar directamente com
 o endpoint de autenticação do Supabase e saltar o desafio. A aplicação apenas
 recusa cedo o formulário sem token, para poupar uma ida ao servidor.
+
+O widget da Cloudflare injecta ele próprio o campo `cf-turnstile-response` no
+contentor; não acrescentamos nenhum, senão haveria dois campos com o mesmo
+nome no mesmo formulário.
+
+**Nota para desenvolvimento:** depois de o CAPTCHA estar ligado no Supabase,
+o login com palavra-passe deixa de funcionar sem um token válido, mesmo em
+`localhost`. Põe `NEXT_PUBLIC_TURNSTILE_SITE_KEY` no `.env.local` e acrescenta
+`localhost` à lista de domínios do widget na Cloudflare.
 
 Sem `NEXT_PUBLIC_TURNSTILE_SITE_KEY` definida, o widget não é desenhado e os
 formulários funcionam como antes — o ambiente de desenvolvimento não precisa

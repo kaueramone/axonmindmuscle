@@ -21,7 +21,11 @@ export default async function AdminLayout({
   const locale = assertLocale(rawLocale);
 
   // Redireciona quem não for administrador antes de renderizar o que quer que seja.
-  await requireAdmin(locale);
+  const { perfil } = await requireAdmin(locale);
 
-  return <AdminShell locale={locale}>{children}</AdminShell>;
+  return (
+    <AdminShell locale={locale} nome={perfil?.display_name}>
+      {children}
+    </AdminShell>
+  );
 }
