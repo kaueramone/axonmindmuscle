@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 
 import { AuthDivider } from "@/components/auth/divider";
 import { GoogleButton } from "@/components/auth/google-button";
+import { Turnstile } from "@/components/auth/turnstile";
 import { Button } from "@/components/ui/button";
 import { Field, PasswordField, PasswordStrength } from "@/components/ui/field";
 import { Alert as AlertIcon, Check } from "@/components/ui/icons";
@@ -35,6 +36,12 @@ export function SignUpForm({ locale, dict }: { locale: Locale; dict: Dict }) {
   );
   const [password, setPassword] = useState("");
   const [oauthError, setOauthError] = useState(false);
+
+  // Cada erro devolvido pelo servidor repõe o widget: os tokens são de uso único.
+  const [tentativa, setTentativa] = useState(0);
+  useEffect(() => {
+    if (state && !state.ok) setTentativa((n) => n + 1);
+  }, [state]);
 
   // Registo concluído: falta confirmar o email.
   if (state?.ok) {
@@ -128,6 +135,8 @@ export function SignUpForm({ locale, dict }: { locale: Locale; dict: Dict }) {
             />
           ) : null}
         </div>
+
+        <Turnstile resetSignal={tentativa} locale={locale} />
 
         <SubmitButton label={copy.submit} />
 

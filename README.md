@@ -232,3 +232,102 @@ horas. Sem isso, o painel seria um horóscopo.
 ---
 
 Desenvolvido por [kaueramone.dev](https://kaueramone.dev)
+
+## Painel administrativo
+
+Vive em `painel.<domínio>` e é servido pela mesma aplicação. O `proxy.ts`
+reescreve `painel.dominio/<algo>` para `/<locale>/painel/<algo>`; as rotas de
+autenticação ficam de fora dessa reescrita para que o login funcione também no
+subdomínio. Sem domínio configurado, o painel continua acessível em
+`/<locale>/painel`.
+
+**Controlo de acesso.** `profiles.role` (`member` | `admin`) decide quem entra.
+São três camadas independentes:
+
+1. `requireAdmin()` no layout do painel, executado no servidor a cada pedido —
+   redireciona para o domínio principal quem não for administrador.
+2. Políticas de RLS: escrita em `exercises` e `exercise_translations`, e leitura
+   de todos os perfis e leads, só com `public.is_admin()`.
+3. As métricas passam por funções `security definer` que começam por verificar
+   `is_admin()`. Um membro comum que chame `/rest/v1/rpc/admin_overview` recebe
+   zero linhas, não um erro.
+
+O gatilho `guard_profile_role` impede que um utilizador autenticado altere o
+próprio `role` — sem ele, a política `profiles_update_own` seria uma porta
+aberta para qualquer pessoa se promover. A `service_role` continua a poder
+nomear o primeiro administrador, senão não haveria forma de arrancar.
+
+Para nomear alguém a partir do SQL editor do Supabase:
+
+```sql
+update public.profiles set role = 'admin' where id = '<uuid do utilizador>';
+```
+
+**O que o painel faz:** visão geral (utilizadores, ativos, treinos, séries,
+volume, leads, prontidão, mercados), séries por dia nos últimos 30 dias,
+exercícios mais usados, gestão do catálogo (criar, editar, ocultar, carregar
+imagem ou vídeo, escrever a orientação nos dois idiomas) e gestão de papéis.
+
+O painel está escrito em pt-PT fixo, sem passar pelo dicionário: é uma
+retaguarda para o cliente, não uma superfície do produto.
+
+## Conteúdo dos exercícios
+
+`exercises` ganhou `media_url`, `media_type` (`image` | `video`), `created_by` e
+`updated_at`. `exercise_translations` ganhou `procedure`, `breathing` e
+`action_feel` — procedimento, respire e sentimento de acção.
+
+A media vive no balde público `exercises` (leitura para toda a gente, escrita
+só para administradores), até 25 MB, em JPG, PNG, WebP, GIF, MP4 ou WebM. O
+caminho é `<id do exercício>/media.<ext>`, portanto substituir não deixa
+ficheiros órfãos. GIFs animados são servidos com `<img>` em vez de
+`next/image`, que perderia a animação.
+
+A apresentação aparece no ecrã de configuração da série, antes de começar:
+imagem ou vídeo, título e os três blocos, cada um só quando tem conteúdo.
+
+## Cloudflare
+
+### Domínio
+
+1. Adiciona o domínio na Cloudflare e aponta os *nameservers* no registrador.
+2. Na Vercel, em **Settings → Domains**, adiciona `<domínio>`,
+   `www.<domínio>` e `painel.<domínio>`.
+3. Na Cloudflare, cria os registos que a Vercel indicar — normalmente `A` para
+   `76.76.21.21` na raiz e `CNAME` para `cname.vercel-dns.com` em `www` e
+   `painel`. **Proxy status: DNS only (nuvem cinzenta).** Com o proxy laranja
+   ligado sobre a Vercel acumulam-se duas CDNs e os certificados entram em
+   conflito.
+4. SSL/TLS na Cloudflare: modo **Full (strict)**.
+
+Depois de o domínio responder, três sítios têm de mudar ao mesmo tempo — é o
+desalinhamento entre eles que causa erros de redirecionamento no login:
+
+- Vercel → variável `NEXT_PUBLIC_SITE_URL=https://<domínio>` (e novo *deploy*).
+- Supabase → **Authentication → URL Configuration**: *Site URL* passa a
+  `https://<domínio>`; em *Redirect URLs* acrescenta `https://<domínio>/**` e
+  `https://painel.<domínio>/**`.
+- Google Cloud Console → no cliente OAuth, *Authorized redirect URIs* mantém o
+  callback do Supabase (`https://<projeto>.supabase.co/auth/v1/callback`) e
+  *Authorized JavaScript origins* passa a incluir `https://<domínio>`.
+
+### Turnstile
+
+1. Cloudflare → **Turnstile → Add widget**. Domínios: `<domínio>` e
+   `painel.<domínio>`. Modo *Managed*.
+2. Copia a **Site Key** para a variável `NEXT_PUBLIC_TURNSTILE_SITE_KEY` na
+   Vercel (e em `.env.local` para desenvolvimento).
+3. Copia a **Secret Key** para o Supabase: **Authentication → Attack
+   Protection → Enable CAPTCHA protection**, fornecedor *Turnstile*.
+
+A verificação do token acontece no Supabase Auth, não na aplicação. É de
+propósito: se fosse a aplicação a validar, alguém podia falar directamente com
+o endpoint de autenticação do Supabase e saltar o desafio. A aplicação apenas
+recusa cedo o formulário sem token, para poupar uma ida ao servidor.
+
+Sem `NEXT_PUBLIC_TURNSTILE_SITE_KEY` definida, o widget não é desenhado e os
+formulários funcionam como antes — o ambiente de desenvolvimento não precisa
+de chaves.
+
+Os tokens do Turnstile são de uso único: cada erro devolvido pelo servidor
+repõe o widget, senão a segunda tentativa enviaria um token já gasto.

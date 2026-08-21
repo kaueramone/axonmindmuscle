@@ -23,45 +23,59 @@ export type Database = {
           attribution: string | null;
           category: Database["public"]["Enums"]["muscle_group"];
           created_at: string;
+          created_by: string | null;
           equipment: string | null;
           id: string;
           is_active: boolean;
           license: string | null;
+          media_type: Database["public"]["Enums"]["exercise_media_type"] | null;
+          media_url: string | null;
           primary_muscles: Database["public"]["Enums"]["muscle_group"][];
           secondary_muscles: Database["public"]["Enums"]["muscle_group"][];
           slug: string;
           source: Database["public"]["Enums"]["exercise_source"];
           source_id: string | null;
+          updated_at: string;
         };
         Insert: {
           attribution?: string | null;
           category: Database["public"]["Enums"]["muscle_group"];
           created_at?: string;
+          created_by?: string | null;
           equipment?: string | null;
           id?: string;
           is_active?: boolean;
           license?: string | null;
+          media_type?: Database["public"]["Enums"]["exercise_media_type"] | null;
+          media_url?: string | null;
           primary_muscles?: Database["public"]["Enums"]["muscle_group"][];
           secondary_muscles?: Database["public"]["Enums"]["muscle_group"][];
           slug: string;
           source?: Database["public"]["Enums"]["exercise_source"];
           source_id?: string | null;
+          updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["exercises"]["Insert"]>;
         Relationships: [];
       };
       exercise_translations: {
         Row: {
+          action_feel: string | null;
+          breathing: string | null;
           description: string | null;
           exercise_id: string;
           locale: Database["public"]["Enums"]["app_locale"];
           name: string;
+          procedure: string | null;
         };
         Insert: {
+          action_feel?: string | null;
+          breathing?: string | null;
           description?: string | null;
           exercise_id: string;
           locale: Database["public"]["Enums"]["app_locale"];
           name: string;
+          procedure?: string | null;
         };
         Update: Partial<
           Database["public"]["Tables"]["exercise_translations"]["Insert"]
@@ -201,6 +215,7 @@ export type Database = {
           market: Database["public"]["Enums"]["market_code"];
           onboarding_completed_at: string | null;
           plan: Database["public"]["Enums"]["user_plan"];
+          role: Database["public"]["Enums"]["user_role"];
           theme: Database["public"]["Enums"]["theme_preference"];
           timezone: string;
           updated_at: string;
@@ -220,6 +235,7 @@ export type Database = {
           market?: Database["public"]["Enums"]["market_code"];
           onboarding_completed_at?: string | null;
           plan?: Database["public"]["Enums"]["user_plan"];
+          role?: Database["public"]["Enums"]["user_role"];
           theme?: Database["public"]["Enums"]["theme_preference"];
           timezone?: string;
           updated_at?: string;
@@ -239,6 +255,7 @@ export type Database = {
           market?: Database["public"]["Enums"]["market_code"];
           onboarding_completed_at?: string | null;
           plan?: Database["public"]["Enums"]["user_plan"];
+          role?: Database["public"]["Enums"]["user_role"];
           theme?: Database["public"]["Enums"]["theme_preference"];
           timezone?: string;
           updated_at?: string;
@@ -270,6 +287,52 @@ export type Database = {
       };
     };
     Functions: {
+      is_admin: { Args: Record<string, never>; Returns: boolean };
+      admin_overview: {
+        Args: Record<string, never>;
+        Returns: {
+          users_total: number;
+          users_new_7: number;
+          users_new_30: number;
+          users_active_7: number;
+          users_active_30: number;
+          users_onboarded: number;
+          sessions_total: number;
+          sessions_7: number;
+          sets_total: number;
+          sets_7: number;
+          volume_total: number;
+          volume_7: number;
+          checkins_7: number;
+          leads_total: number;
+          leads_7: number;
+          exercises_active: number;
+          exercises_with_media: number;
+          market_pt: number;
+          market_br: number;
+        }[];
+      };
+      admin_daily_activity: {
+        Args: { p_days?: number };
+        Returns: {
+          dia: string;
+          novos_utilizadores: number;
+          sessoes: number;
+          series: number;
+          utilizadores_ativos: number;
+        }[];
+      };
+      admin_top_exercises: {
+        Args: { p_days?: number; p_limit?: number };
+        Returns: { exercise_name: string; series: number; utilizadores: number }[];
+      };
+      admin_readiness_split: {
+        Args: { p_days?: number };
+        Returns: {
+          state: Database["public"]["Enums"]["readiness_state"];
+          total: number;
+        }[];
+      };
       readiness_context: {
         Args: Record<string, never>;
         Returns: {
@@ -305,6 +368,8 @@ export type Database = {
       app_locale: "pt-pt" | "pt-br";
       readiness_state: "strong" | "moderate" | "rest";
       exercise_source: "wger" | "axon";
+      exercise_media_type: "image" | "video";
+      user_role: "member" | "admin";
       muscle_group:
         | "peito"
         | "costas"
@@ -355,5 +420,8 @@ export type UserPlan = Enums<"user_plan">;
 export type MarketCode = Enums<"market_code">;
 export type MuscleGroup = Enums<"muscle_group">;
 export type Exercise = Tables<"exercises">;
+export type ExerciseTranslation = Tables<"exercise_translations">;
+export type ExerciseMediaType = Enums<"exercise_media_type">;
+export type UserRole = Enums<"user_role">;
 export type WorkoutSession = Tables<"workout_sessions">;
 export type WorkoutSet = Tables<"workout_sets">;

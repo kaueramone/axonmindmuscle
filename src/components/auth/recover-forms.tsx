@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 
+import { Turnstile } from "@/components/auth/turnstile";
 import { Button } from "@/components/ui/button";
 import { Field, PasswordField, PasswordStrength } from "@/components/ui/field";
 import { Alert as AlertIcon, Check } from "@/components/ui/icons";
@@ -35,6 +36,12 @@ export function RecoverForm({ locale, dict }: { locale: Locale; dict: Dict }) {
     requestPasswordResetAction,
     null,
   );
+
+  // Cada erro repõe o widget: os tokens do Turnstile são de uso único.
+  const [tentativa, setTentativa] = useState(0);
+  useEffect(() => {
+    if (state && !state.ok) setTentativa((n) => n + 1);
+  }, [state]);
 
   if (state?.ok) {
     return (
@@ -77,6 +84,7 @@ export function RecoverForm({ locale, dict }: { locale: Locale; dict: Dict }) {
           required
           placeholder={dict.auth.fields.emailPlaceholder}
         />
+        <Turnstile resetSignal={tentativa} locale={locale} />
         <SubmitButton label={copy.submit} />
       </form>
 

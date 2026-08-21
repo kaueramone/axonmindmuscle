@@ -74,23 +74,28 @@ const dictionary: Dict = {
         {
           index: "01",
           title: "Ritmo controlado",
-          body: "Um metrônomo visual na tela marca a cadência de cada repetição. O tempo sob tensão deixa de ser estimativa e passa a ser executado.",
+          body: "Um metrônomo visual na tela marca cada fase da repetição. A cadência deixa de ser estimada e passa a ser executada.",
         },
         {
           index: "02",
-          title: "Prontidão medida",
-          body: "Três perguntas antes de treinar — sono, cansaço e batimento cardíaco. O aplicativo diz se hoje é dia de forçar, manter ou recuperar.",
+          title: "Prontidão imediata",
+          body: "Três perguntas antes de treinar — sono, cansaço e batimento cardíaco. A AXON usa estes sinais para gerar uma indicação de treino: forte, moderado ou recuperação.",
         },
         {
           index: "03",
           title: "Progresso registrado",
-          body: "Cada série fica registrada. O que é medido evolui: você vê a carga subir, o volume acumular e a consistência se construir.",
+          body: "Cada série fica registrada. O que é medido deixa de ser achismo: você vê a carga subir, o volume acumular e a consistência se construir.",
         },
       ],
 
-      metronomeTitle: "O ritmo certo, sem nenhum equipamento",
+      metronomeEyebrow: "A funcionalidade",
+      metronomeTitle: "Cadência controlada.",
       metronomeBody:
-        "Excêntrica controlada, pausa, concêntrica. O guia visual acompanha a série do início ao fim, na tela do celular apoiado no banco. Você não precisa de câmera, sensor nem relógio.",
+        "Defina o ritmo da repetição e use o metrônomo para executar cada fase do movimento com consistência.",
+      metronomeNote:
+        "A AXON ajuda você a transformar uma cadência prescrita em uma execução reproduzível.",
+      metronomeEquipment:
+        "Sem câmera, sem sensor, sem relógio. Basta o celular apoiado no banco.",
       metronomeCaption: "Cadência 3-1-1 · exemplo",
       metronomePhases: {
         eccentric: "Excêntrica",
@@ -107,6 +112,11 @@ const dictionary: Dict = {
         moderate: "Treinar moderado",
         rest: "Descansar",
       },
+
+      thinkingEyebrow: "Como a AXON pensa",
+      thinkingTitle: "A ciência não é um argumento. É o ponto de partida.",
+      thinkingBody:
+        "Avaliamos a evidência disponível, o contexto do treino e a resposta individual para transformar conhecimento científico em decisões práticas.",
 
       proofTitle: "Evidência antes de opinião",
       proofBody:
@@ -574,6 +584,12 @@ const dictionary: Dict = {
     allGroups: "Todos",
     noResults: "Nenhum exercício encontrado.",
     catalogCredit: "Catálogo de exercícios do wger (wger.de), sob licença CC BY-SA 4.0.",
+    howToTitle: "Como executar",
+    procedure: "Procedimento",
+    breathing: "Respire",
+    actionFeel: "Sentimento de ação",
+    noGuidance: "Ainda sem orientação escrita para este exercício.",
+    mediaAlt: "Demonstração de {exercise}",
     cadence: "Cadência",
     cadenceHint: "Segundos por fase: descida, pausa e subida.",
     presets: {
@@ -640,6 +656,7 @@ const dictionary: Dict = {
     passwordMismatch: "As senhas não coincidem.",
     nameRequired: "Informe seu nome.",
     rateLimited: "Muitas tentativas. Aguarde um momento.",
+    captcha: "Confirme que você não é um robô antes de continuar.",
     sessionExpired: "A sessão expirou. Entre novamente.",
     notFoundTitle: "Página não encontrada",
     notFoundBody: "O caminho que você seguiu não existe ou foi movido.",

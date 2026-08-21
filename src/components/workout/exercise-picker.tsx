@@ -1,8 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState } from "react";
 
-import { Check } from "@/components/ui/icons";
+import { Check, Play } from "@/components/ui/icons";
 import type { Dict } from "@/lib/i18n/types";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +14,13 @@ export type ExerciseOption = {
   equipment: string | null;
   /** Verdadeiro quando o registo veio do wger e exige crédito. */
   attributed: boolean;
+  /** Imagem ou vídeo de demonstração, carregado no painel administrativo. */
+  mediaUrl: string | null;
+  mediaType: "image" | "video" | null;
+  description: string | null;
+  procedure: string | null;
+  breathing: string | null;
+  actionFeel: string | null;
 };
 
 const GROUP_LABELS: Record<string, string> = {
@@ -120,8 +128,30 @@ export function ExercisePicker({
               <button
                 type="button"
                 onClick={() => onPick(exercise)}
-                className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-surface-hover"
+                className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-hover"
               >
+                <span className="relative grid size-11 shrink-0 place-items-center overflow-hidden rounded-lg border border-hairline bg-bg-sunken">
+                  {exercise.mediaUrl &&
+                  exercise.mediaType === "image" &&
+                  !exercise.mediaUrl.toLowerCase().endsWith(".gif") ? (
+                    <Image
+                      src={exercise.mediaUrl}
+                      alt=""
+                      fill
+                      sizes="44px"
+                      className="object-cover"
+                    />
+                  ) : exercise.mediaUrl && exercise.mediaType === "image" ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={exercise.mediaUrl} alt="" className="size-full object-cover" />
+                  ) : exercise.mediaUrl ? (
+                    <Play className="size-4 text-fg-subtle" />
+                  ) : (
+                    <span className="data-mono text-caption text-fg-subtle">
+                      {exercise.name.slice(0, 2).toUpperCase()}
+                    </span>
+                  )}
+                </span>
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="truncate text-callout font-medium text-fg">
                     {exercise.name}

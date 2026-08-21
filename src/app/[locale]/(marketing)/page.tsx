@@ -139,12 +139,18 @@ export default async function FitnessLandingPage({
       <section className="border-t border-hairline bg-bg-sunken/40">
         <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 py-20 sm:px-8 sm:py-28 lg:grid-cols-2">
           <Reveal>
-            <Badge tone="accent">{dict.common.inDevelopment}</Badge>
-            <h2 className="mt-5 text-[clamp(1.75rem,4vw,2.75rem)] leading-tight text-fg">
+            <p className="label-brand text-fg-subtle">{copy.metronomeEyebrow}</p>
+            <h2 className="mt-3 text-[clamp(1.75rem,4vw,2.75rem)] leading-tight text-fg">
               {copy.metronomeTitle}
             </h2>
             <p className="mt-5 text-title3 leading-relaxed text-fg-muted">
               {copy.metronomeBody}
+            </p>
+            <p className="mt-6 border-l-2 border-accent/50 pl-4 text-headline leading-relaxed text-fg">
+              {copy.metronomeNote}
+            </p>
+            <p className="mt-6 text-footnote text-fg-subtle">
+              {copy.metronomeEquipment}
             </p>
           </Reveal>
 
@@ -198,6 +204,21 @@ export default async function FitnessLandingPage({
             </h2>
             <p className="mt-5 text-title3 leading-relaxed text-fg-muted">
               {copy.readinessBody}
+            </p>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ---------------- Como a AXON pensa ---------------- */}
+      <section className="border-t border-hairline">
+        <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8 sm:py-20">
+          <Reveal>
+            <p className="label-brand text-accent">{copy.thinkingEyebrow}</p>
+            <h2 className="mt-4 text-[clamp(1.5rem,3.4vw,2.25rem)] leading-tight text-fg">
+              {copy.thinkingTitle}
+            </h2>
+            <p className="mt-5 text-title3 leading-relaxed text-fg-muted">
+              {copy.thinkingBody}
             </p>
           </Reveal>
         </div>

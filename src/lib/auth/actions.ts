@@ -25,11 +25,26 @@ export type AuthErrorKey =
   | "passwordMismatch"
   | "nameRequired"
   | "rateLimited"
+  | "captcha"
   | "sessionExpired";
 
 export type ActionResult =
   | { ok: true; message?: string }
   | { ok: false; error: AuthErrorKey };
+
+/**
+ * Token do Cloudflare Turnstile. A verificação real acontece do lado do
+ * Supabase Auth (Authentication → Attack Protection → CAPTCHA), que guarda a
+ * chave secreta e valida o token antes de criar ou autenticar a conta. Aqui
+ * apenas se recusa o pedido quando o widget está configurado e não foi
+ * resolvido, poupando uma ida ao servidor.
+ */
+const CAPTCHA_ATIVO = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
+
+function readCaptcha(formData: FormData): string | undefined {
+  const token = String(formData.get("cf-turnstile-response") ?? "").trim();
+  return token || undefined;
+}
 
 function readLocale(formData: FormData): Locale {
   const value = formData.get("locale");
@@ -62,6 +77,7 @@ function mapAuthError(message: string, status?: number): AuthErrorKey {
   if (text.includes("invalid email") || text.includes("unable to validate email")) {
     return "invalidEmail";
   }
+  if (text.includes("captcha")) return "captcha";
   if (text.includes("fetch") || text.includes("network")) return "network";
 
   return "generic";
@@ -80,15 +96,19 @@ export async function signUpAction(
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
 
+  const captchaToken = readCaptcha(formData);
+
   if (name.length < 2) return { ok: false, error: "nameRequired" };
   if (!isValidEmail(email)) return { ok: false, error: "invalidEmail" };
   if (password.length < 8) return { ok: false, error: "passwordTooShort" };
+  if (CAPTCHA_ATIVO && !captchaToken) return { ok: false, error: "captcha" };
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signUp({
     email,
     password,
     options: {
+      captchaToken,
       emailRedirectTo: `${SITE_URL}/auth/confirm?next=${encodeURIComponent(
         route(locale, "onboarding"),
       )}`,
@@ -114,11 +134,18 @@ export async function signInAction(
   const password = String(formData.get("password") ?? "");
   const redirectTo = String(formData.get("redirect") ?? "");
 
+  const captchaToken = readCaptcha(formData);
+
   if (!isValidEmail(email)) return { ok: false, error: "invalidEmail" };
   if (!password) return { ok: false, error: "invalidCredentials" };
+  if (CAPTCHA_ATIVO && !captchaToken) return { ok: false, error: "captcha" };
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+    options: { captchaToken },
+  });
 
   if (error) return { ok: false, error: mapAuthError(error.message, error.status) };
 
@@ -146,10 +173,14 @@ export async function requestPasswordResetAction(
   const locale = readLocale(formData);
   const email = String(formData.get("email") ?? "").trim();
 
+  const captchaToken = readCaptcha(formData);
+
   if (!isValidEmail(email)) return { ok: false, error: "invalidEmail" };
+  if (CAPTCHA_ATIVO && !captchaToken) return { ok: false, error: "captcha" };
 
   const supabase = await createClient();
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    captchaToken,
     redirectTo: `${SITE_URL}/auth/confirm?next=${encodeURIComponent(
       route(locale, "reset"),
     )}`,

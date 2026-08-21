@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 
 import { AuthDivider } from "@/components/auth/divider";
 import { GoogleButton } from "@/components/auth/google-button";
+import { Turnstile } from "@/components/auth/turnstile";
 import { Button } from "@/components/ui/button";
 import { Field, PasswordField } from "@/components/ui/field";
 import { Alert as AlertIcon } from "@/components/ui/icons";
@@ -42,6 +43,13 @@ export function SignInForm({
     initialError ? { ok: false, error: initialError as never } : null,
   );
   const [oauthError, setOauthError] = useState(false);
+
+  // Um token do Turnstile só serve uma vez: cada erro devolvido pelo servidor
+  // repõe o widget para que a tentativa seguinte leve um token novo.
+  const [tentativa, setTentativa] = useState(0);
+  useEffect(() => {
+    if (state && !state.ok) setTentativa((n) => n + 1);
+  }, [state]);
 
   const errorKey = oauthError
     ? "generic"
@@ -98,6 +106,8 @@ export function SignInForm({
             {copy.forgot}
           </Link>
         </div>
+
+        <Turnstile resetSignal={tentativa} locale={locale} />
 
         <SubmitButton label={copy.submit} />
       </form>

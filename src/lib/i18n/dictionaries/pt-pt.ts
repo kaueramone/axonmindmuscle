@@ -72,23 +72,28 @@ const dictionary = {
         {
           index: "01",
           title: "Ritmo controlado",
-          body: "Um metrónomo visual no ecrã marca a cadência de cada repetição. O tempo sob tensão deixa de ser estimativa e passa a ser executado.",
+          body: "Um metrónomo visual no ecrã marca cada fase da repetição. A cadência deixa de ser estimada e passa a ser executada.",
         },
         {
           index: "02",
-          title: "Prontidão medida",
-          body: "Três perguntas antes de treinar — sono, cansaço e batimento cardíaco. A aplicação diz-te se hoje é dia de forçar, manter ou recuperar.",
+          title: "Prontidão imediata",
+          body: "Três perguntas antes de treinar — sono, cansaço e batimento cardíaco. A AXON usa estes sinais para gerar uma indicação de treino: forte, moderado ou recuperação.",
         },
         {
           index: "03",
           title: "Progresso registado",
-          body: "Cada série fica registada. O que é medido evolui: vês a carga a subir, o volume a acumular e a consistência a construir-se.",
+          body: "Cada série fica registada. O que é medido deixa de ser achismo: vês a carga a subir, o volume a acumular e a consistência a construir-se.",
         },
       ],
 
-      metronomeTitle: "O ritmo certo, sem equipamento nenhum",
+      metronomeEyebrow: "A funcionalidade",
+      metronomeTitle: "Cadência controlada.",
       metronomeBody:
-        "Excêntrica controlada, pausa, concêntrica. O guia visual acompanha a série do princípio ao fim, no ecrã do telemóvel apoiado no banco. Não precisas de câmara, sensor nem relógio.",
+        "Define o ritmo da repetição e usa o metrónomo para executar cada fase do movimento com consistência.",
+      metronomeNote:
+        "A AXON ajuda-te a transformar uma cadência prescrita numa execução reproduzível.",
+      metronomeEquipment:
+        "Sem câmara, sem sensor, sem relógio. Basta o telemóvel apoiado no banco.",
       metronomeCaption: "Cadência 3-1-1 · exemplo",
       metronomePhases: {
         eccentric: "Excêntrica",
@@ -105,6 +110,11 @@ const dictionary = {
         moderate: "Treinar moderado",
         rest: "Descansar",
       },
+
+      thinkingEyebrow: "Como a AXON pensa",
+      thinkingTitle: "A ciência não é um argumento. É o ponto de partida.",
+      thinkingBody:
+        "Avaliamos a evidência disponível, o contexto do treino e a resposta individual para transformar conhecimento científico em decisões práticas.",
 
       proofTitle: "Evidência antes de opinião",
       proofBody:
@@ -575,6 +585,12 @@ const dictionary = {
     allGroups: "Todos",
     noResults: "Nenhum exercício encontrado.",
     catalogCredit: "Catálogo de exercícios do wger (wger.de), sob licença CC BY-SA 4.0.",
+    howToTitle: "Como executar",
+    procedure: "Procedimento",
+    breathing: "Respire",
+    actionFeel: "Sentimento de acção",
+    noGuidance: "Ainda sem orientação escrita para este exercício.",
+    mediaAlt: "Demonstração de {exercise}",
     cadence: "Cadência",
     cadenceHint: "Segundos por fase: descida, pausa e subida.",
     presets: {
@@ -641,6 +657,7 @@ const dictionary = {
     passwordMismatch: "As palavras-passe não coincidem.",
     nameRequired: "Indica o teu nome.",
     rateLimited: "Demasiadas tentativas. Aguarda um momento.",
+    captcha: "Confirma que não és um robô antes de continuar.",
     sessionExpired: "A sessão expirou. Entra novamente.",
     notFoundTitle: "Página não encontrada",
     notFoundBody: "O caminho que seguiste não existe ou foi movido.",

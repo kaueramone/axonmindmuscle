@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { AxonRunner } from "@/components/workout/axon-runner";
+import { ExerciseBrief } from "@/components/workout/exercise-brief";
 import {
   ExercisePicker,
   type ExerciseOption,
@@ -277,6 +278,8 @@ export function WorkoutRunner({
               {dict.readiness.avoidTitle}: {dict.readiness.avoidHint}
             </Alert>
           ) : null}
+
+          <ExerciseBrief exercise={exercise} copy={copy} />
 
           <Card className="flex flex-col gap-4">
             <div>

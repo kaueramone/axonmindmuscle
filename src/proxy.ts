@@ -36,6 +36,16 @@ export async function proxy(request: NextRequest) {
   const locale = firstSegment;
   const routeSegment = pathname.split("/")[2] ?? "";
 
+  // O painel administrativo vive num subdomínio próprio mas é servido pela
+  // mesma aplicação: painel.dominio/<algo> reescreve para /<locale>/painel/<algo>.
+  // As rotas de autenticação ficam de fora para que o login funcione lá também.
+  const host = request.headers.get("host")?.split(":")[0]?.toLowerCase() ?? "";
+  const noSubdominioPainel = host.startsWith("painel.");
+  const reescreverParaPainel =
+    noSubdominioPainel &&
+    routeSegment !== segments.admin &&
+    !authSegments.includes(routeSegment);
+
   // ---- 2. Renovar a sessão do Supabase ----
   const { response, user } = await updateSession(request);
   response.cookies.set(LOCALE_COOKIE, locale, {
@@ -65,6 +75,14 @@ export async function proxy(request: NextRequest) {
     const redirect = NextResponse.redirect(url);
     response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
     return redirect;
+  }
+
+  if (reescreverParaPainel) {
+    const url = request.nextUrl.clone();
+    url.pathname = `/${locale}/${segments.admin}${pathname.slice(locale.length + 1)}`;
+    const rewrite = NextResponse.rewrite(url, { request });
+    response.cookies.getAll().forEach((cookie) => rewrite.cookies.set(cookie));
+    return rewrite;
   }
 
   return response;

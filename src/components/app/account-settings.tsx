@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useTheme } from "@/components/theme";
 import { Button } from "@/components/ui/button";
 import {
+  Chart,
   Device,
   Download,
   Globe,
@@ -29,11 +30,13 @@ export function AccountSettings({
   dict,
   email,
   plan,
+  isAdmin = false,
 }: {
   locale: Locale;
   dict: Dict;
   email: string;
   plan: UserPlan;
+  isAdmin?: boolean;
 }) {
   const copy = dict.app.account;
   const { preference, setPreference } = useTheme();
@@ -135,6 +138,17 @@ export function AccountSettings({
           </div>
         </div>
       </ListGroup>
+
+      {isAdmin ? (
+        <ListGroup>
+          <ListRow
+            icon={<Chart className="size-4.5" />}
+            label="Painel administrativo"
+            detail="Análise da plataforma e catálogo de exercícios"
+            href={route(locale, "admin")}
+          />
+        </ListGroup>
+      ) : null}
 
       <ListGroup title={copy.title}>
         <ListRow icon={<Lock className="size-4.5" />} label={copy.email} value={email} />

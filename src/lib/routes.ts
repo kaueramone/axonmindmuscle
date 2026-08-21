@@ -16,6 +16,7 @@ export const segments = {
   community: "comunidade",
   profile: "perfil",
   account: "conta",
+  admin: "painel",
   terms: "termos",
   privacy: "privacidade",
 } as const;
@@ -38,6 +39,7 @@ export const protectedSegments: string[] = [
   segments.community,
   segments.profile,
   segments.account,
+  segments.admin,
 ];
 
 /** Rotas de autenticação — inacessíveis a quem já tem sessão. */

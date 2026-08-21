@@ -36,22 +36,34 @@ export default async function WorkoutPage({
   const [{ data: linhas }, { data: nomes }] = await Promise.all([
     supabase
       .from("exercises")
-      .select("id, category, equipment, source")
+      .select("id, category, equipment, source, media_url, media_type")
       .eq("is_active", true)
       .order("category"),
-    supabase.from("exercise_translations").select("exercise_id, name").eq("locale", locale),
+    supabase
+      .from("exercise_translations")
+      .select("exercise_id, name, description, procedure, breathing, action_feel")
+      .eq("locale", locale),
   ]);
 
-  const nomePorId = new Map((nomes ?? []).map((n) => [n.exercise_id, n.name]));
+  const textoPorId = new Map((nomes ?? []).map((n) => [n.exercise_id, n]));
 
   const exercises: ExerciseOption[] = (linhas ?? [])
-    .map((linha) => ({
-      id: linha.id,
-      name: nomePorId.get(linha.id) ?? "",
-      category: linha.category as string,
-      equipment: linha.equipment,
-      attributed: linha.source === "wger",
-    }))
+    .map((linha) => {
+      const texto = textoPorId.get(linha.id);
+      return {
+        id: linha.id,
+        name: texto?.name ?? "",
+        category: linha.category as string,
+        equipment: linha.equipment,
+        attributed: linha.source === "wger",
+        mediaUrl: linha.media_url,
+        mediaType: linha.media_type,
+        description: texto?.description ?? null,
+        procedure: texto?.procedure ?? null,
+        breathing: texto?.breathing ?? null,
+        actionFeel: texto?.action_feel ?? null,
+      };
+    })
     .filter((e) => e.name)
     .sort((a, b) => a.name.localeCompare(b.name, locale));
 

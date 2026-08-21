@@ -28,7 +28,7 @@ export default async function AccountPage({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("plan")
+    .select("plan, role")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -51,6 +51,7 @@ export default async function AccountPage({
           dict={dict}
           email={user.email ?? ""}
           plan={profile?.plan ?? "free"}
+          isAdmin={profile?.role === "admin"}
         />
       </div>
     </>

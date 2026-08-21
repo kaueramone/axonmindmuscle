@@ -241,6 +241,59 @@ export function Clock(props: IconProps) {
   );
 }
 
+export function Play(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M8 5.5 18.5 12 8 18.5v-13Z" strokeLinejoin="round" />
+    </Icon>
+  );
+}
+
+export function Plus(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 5v14M5 12h14" />
+    </Icon>
+  );
+}
+
+export function Photo(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect x="3.5" y="5" width="17" height="14" rx="2.5" />
+      <circle cx="9" cy="10" r="1.5" />
+      <path d="m4.5 17 4.2-4.2a2 2 0 0 1 2.8 0L16 17.5" />
+    </Icon>
+  );
+}
+
+export function Pencil(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4.5 19.5h3.2L18.3 8.9a2.3 2.3 0 0 0-3.2-3.2L4.5 16.3v3.2Z" strokeLinejoin="round" />
+      <path d="m13.8 7 3.2 3.2" />
+    </Icon>
+  );
+}
+
+export function Trash(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4.5 7h15M9.5 7V5.5a1.5 1.5 0 0 1 1.5-1.5h2a1.5 1.5 0 0 1 1.5 1.5V7" />
+      <path d="M6.5 7l.8 11.6a2 2 0 0 0 2 1.9h5.4a2 2 0 0 0 2-1.9L17.5 7" />
+    </Icon>
+  );
+}
+
+export function Upload(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 20.5v-11m0 0-4 4m4-4 4 4" />
+      <path d="M4.5 7.5v-2a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v2" />
+    </Icon>
+  );
+}
+
 /** Marca do Google, com as cores oficiais — usada no botão de OAuth. */
 export function GoogleMark(props: SVGProps<SVGSVGElement>) {
   return (
