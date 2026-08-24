@@ -569,6 +569,30 @@ const dictionary = {
       ],
     },
 
+    data: {
+      title: "Os teus dados",
+      footer:
+        "O teu histórico sai daqui quando quiseres, agora e sempre. A exportação não depende do plano.",
+      csvLabel: "Exportar para folha de cálculo",
+      csvHint: "Treinos, séries, cargas, RIR e prontidão, em ficheiros que o Excel abre",
+      jsonLabel: "Backup completo da conta",
+      jsonHint: "Tudo num só ficheiro estruturado",
+      deleteTitle: "Apagar a conta",
+      deleteBody:
+        "Ficas com três meses para exportar o histórico ou voltar atrás. Passado esse prazo apagamos tudo em definitivo, e aí não há como recuperar.",
+      deleteCta: "Apagar a minha conta",
+      deleteConfirm:
+        "Se tiveres subscrição ativa, cancelamo-la já — mantens o acesso até ao fim do período que já pagaste.",
+      deleteKeep: "Manter a conta",
+      deleteGo: "Confirmar",
+      deleteFailed: "Não foi possível registar o pedido. Tenta novamente.",
+      deleteBilling:
+        "Não conseguimos cancelar a subscrição, por isso não marcámos nada. Cancela primeiro no portal de faturação.",
+      pendingTitle: "A tua conta será apagada a {date}.",
+      pendingBody:
+        "Até lá entras e exportas tudo como sempre. Se mudares de ideias, é um botão.",
+      pendingUndo: "Manter a minha conta",
+    },
     account: {
       title: "Conta",
       preferences: "Preferências",

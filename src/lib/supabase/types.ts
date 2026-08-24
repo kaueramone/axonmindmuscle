@@ -278,6 +278,7 @@ export type Database = {
           locale: Database["public"]["Enums"]["app_locale"];
           market: Database["public"]["Enums"]["market_code"];
           onboarding_completed_at: string | null;
+          deletion_requested_at: string | null;
           plan: Database["public"]["Enums"]["user_plan"];
           role: Database["public"]["Enums"]["user_role"];
           stripe_customer_id: string | null;
@@ -401,6 +402,14 @@ export type Database = {
           state: Database["public"]["Enums"]["readiness_state"];
           total: number;
         }[];
+      };
+      request_account_deletion: {
+        Args: Record<string, never>;
+        Returns: string;
+      };
+      cancel_account_deletion: {
+        Args: Record<string, never>;
+        Returns: undefined;
       };
       last_performance: {
         Args: Record<string, never>;

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { AccountSettings } from "@/components/app/account-settings";
 import { AppHeader } from "@/components/app/app-header";
+import { DataOwnership } from "@/components/app/data-ownership";
 import { getDictionary } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n/config";
 import { route } from "@/lib/routes";
@@ -28,7 +29,7 @@ export default async function AccountPage({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("plan, role")
+    .select("plan, role, deletion_requested_at")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -45,13 +46,19 @@ export default async function AccountPage({
         eyebrow={dict.common.tagline}
       />
 
-      <div className="mx-auto max-w-2xl px-5 pt-6">
+      <div className="mx-auto flex max-w-2xl flex-col gap-8 px-5 pt-6">
         <AccountSettings
           locale={locale}
           dict={dict}
           email={user.email ?? ""}
           plan={profile?.plan ?? "free"}
           isAdmin={profile?.role === "admin"}
+        />
+
+        <DataOwnership
+          locale={locale}
+          dict={dict}
+          deletionRequestedAt={profile?.deletion_requested_at ?? null}
         />
       </div>
     </>

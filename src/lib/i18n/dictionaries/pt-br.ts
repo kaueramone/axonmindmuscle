@@ -568,6 +568,30 @@ const dictionary: Dict = {
       ],
     },
 
+    data: {
+      title: "Seus dados",
+      footer:
+        "Seu histórico sai daqui quando você quiser, agora e sempre. A exportação não depende do plano.",
+      csvLabel: "Exportar para planilha",
+      csvHint: "Treinos, séries, cargas, RIR e prontidão, em arquivos que o Excel abre",
+      jsonLabel: "Backup completo da conta",
+      jsonHint: "Tudo em um arquivo estruturado só",
+      deleteTitle: "Apagar a conta",
+      deleteBody:
+        "Você fica com três meses para exportar o histórico ou voltar atrás. Passado esse prazo apagamos tudo em definitivo, e aí não tem como recuperar.",
+      deleteCta: "Apagar minha conta",
+      deleteConfirm:
+        "Se você tiver assinatura ativa, cancelamos ela agora — o acesso continua até o fim do período já pago.",
+      deleteKeep: "Manter a conta",
+      deleteGo: "Confirmar",
+      deleteFailed: "Não foi possível registrar o pedido. Tente novamente.",
+      deleteBilling:
+        "Não conseguimos cancelar a assinatura, por isso não marcamos nada. Cancele primeiro no portal de faturamento.",
+      pendingTitle: "Sua conta será apagada em {date}.",
+      pendingBody:
+        "Até lá você entra e exporta tudo como sempre. Se mudar de ideia, é um botão.",
+      pendingUndo: "Manter minha conta",
+    },
     account: {
       title: "Conta",
       preferences: "Preferências",
