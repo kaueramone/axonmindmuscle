@@ -18,6 +18,9 @@ import type { Enums } from "@/lib/supabase/types";
  *  2. Cada evento é processado uma vez. O Stripe reenvia por desenho.
  *  3. Respondemos 200 a tudo o que percebemos, mesmo que ignoremos. Um erro
  *     devolvido faz o Stripe reenviar em backoff durante dias.
+ *  4. Toda a escrita é verificada. O supabase-js devolve o erro em vez de o
+ *     lançar, por isso uma escrita recusada passaria em silêncio e o 200
+ *     diria ao Stripe que estava tratado.
  */
 
 export const runtime = "nodejs";
@@ -121,7 +124,7 @@ export async function POST(request: NextRequest) {
       // pagamento para o queimar.
       const codigoFundadores = sub.metadata?.founders_code;
       if (evento.type === "customer.subscription.created" && codigoFundadores) {
-        await supabase.from("coupon_redemptions").upsert(
+        const { error: erroCupao } = await supabase.from("coupon_redemptions").upsert(
           {
             user_id: dono,
             code: codigoFundadores,
@@ -136,9 +139,12 @@ export async function POST(request: NextRequest) {
           },
           { onConflict: "user_id,code", ignoreDuplicates: true },
         );
+        if (erroCupao) {
+          throw new Error(`coupon_redemptions: ${erroCupao.message}`);
+        }
       }
 
-      await supabase.from("subscriptions").upsert(
+      const { error: erroSub } = await supabase.from("subscriptions").upsert(
         {
           id: sub.id,
           user_id: dono,
@@ -156,6 +162,12 @@ export async function POST(request: NextRequest) {
         },
         { onConflict: "id" },
       );
+
+      // Sem isto, uma escrita recusada devolvia 200 ao Stripe: o pagamento
+      // entrava, o plano ficava por mudar, e não havia reenvio nem registo.
+      if (erroSub) {
+        throw new Error(`subscriptions: ${erroSub.message}`);
+      }
     }
 
     if (evento.type === "checkout.session.completed") {
@@ -165,10 +177,13 @@ export async function POST(request: NextRequest) {
       // Guardamos o cliente no perfil para que a próxima compra reaproveite
       // o mesmo registo no Stripe em vez de criar um duplicado.
       if (userId && sessao.customer) {
-        await supabase
+        const { error: erroPerfil } = await supabase
           .from("profiles")
           .update({ stripe_customer_id: String(sessao.customer) })
           .eq("id", userId);
+        if (erroPerfil) {
+          throw new Error(`profiles: ${erroPerfil.message}`);
+        }
       }
     }
   } catch (erro) {
