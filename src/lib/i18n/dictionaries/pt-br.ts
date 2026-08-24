@@ -432,6 +432,13 @@ const dictionary: Dict = {
     },
     progress: {
       title: "Progresso",
+      readinessCheckTitle: "A prontidão acertou?",
+      readinessArrival: "Como você chegou",
+      readinessEffort: "Esforço",
+      readinessRead:
+        "Nos dias em que você chegou em condições levantou em média {alto} kg, com esforço {altoEsforco}. Nos dias de recuperação foram {baixo} kg, com esforço {baixoEsforco}.",
+      readinessCaveat:
+        "Isso é uma observação sobre você, não uma validação do modelo. A prontidão é uma heurística e nunca impede você de treinar — só diz o que esperar do dia.",
       empty: "Sem registros ainda. O primeiro treino começa a linha.",
       streak: "Sequência",
       sessions: "Sessões",

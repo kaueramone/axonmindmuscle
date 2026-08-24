@@ -5,6 +5,10 @@ import { redirect } from "next/navigation";
 import { AppHeader } from "@/components/app/app-header";
 import { LoadSummary, type LoadDay, type ZoneRow } from "@/components/app/load-summary";
 import {
+  ReadinessCheck,
+  type ReadinessPerformance,
+} from "@/components/app/readiness-check";
+import {
   RoutineProgress,
   type RoutineWeek,
   type RoutineWeeks,
@@ -114,6 +118,12 @@ export default async function ProgressPage({
     }),
   );
 
+  // A prontidão a prestar contas: o que previu contra o que aconteceu.
+  const { data: prontidaoVsDesempenho } = await supabase.rpc(
+    "readiness_vs_performance",
+    { p_from: from, p_to: to },
+  );
+
   const linhas = series ?? [];
   const volumeTotal = linhas.reduce((total, s) => total + Number(s.volume_kg ?? 0), 0);
   const diasDistintos = new Set(linhas.map((s) => s.local_date)).size;
@@ -200,6 +210,13 @@ export default async function ProgressPage({
           zonas={(zonasCardio ?? []) as ZoneRow[]}
           copy={copy}
           zoneLabels={dict.workout.zones}
+        />
+
+        <ReadinessCheck
+          linhas={(prontidaoVsDesempenho ?? []) as ReadinessPerformance[]}
+          copy={copy}
+          states={dict.readiness.states}
+          locale={locale}
         />
 
         <RoutineProgress

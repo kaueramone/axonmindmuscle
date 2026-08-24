@@ -455,6 +455,17 @@ export type Database = {
         Args: Record<string, never>;
         Returns: undefined;
       };
+      readiness_vs_performance: {
+        Args: { p_from: string; p_to: string };
+        Returns: {
+          estado: Database["public"]["Enums"]["readiness_state"];
+          sessoes: number;
+          rpe_medio: number | null;
+          volume_medio: number | null;
+          series_medias: number | null;
+          rir_medio: number | null;
+        }[];
+      };
       routine_week_summary: {
         Args: { p_routine: string; p_weeks?: number };
         Returns: {
