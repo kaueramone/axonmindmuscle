@@ -84,6 +84,48 @@ export type Database = {
         >;
         Relationships: [];
       };
+      routines: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          created_at: string;
+          updated_at: string;
+          archived_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          name: string;
+          created_at?: string;
+          updated_at?: string;
+          archived_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["routines"]["Insert"]>;
+        Relationships: [];
+      };
+      routine_exercises: {
+        Row: {
+          id: string;
+          routine_id: string;
+          exercise_id: string;
+          position: number;
+          target_sets: number | null;
+          target_reps: number | null;
+          target_duration_s: number | null;
+        };
+        Insert: {
+          id?: string;
+          routine_id: string;
+          exercise_id: string;
+          position?: number;
+          target_sets?: number | null;
+          target_reps?: number | null;
+          target_duration_s?: number | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["routine_exercises"]["Insert"]>;
+        Relationships: [];
+      };
       workout_sessions: {
         Row: {
           created_at: string;
@@ -91,6 +133,7 @@ export type Database = {
           id: string;
           notes: string | null;
           rpe: number | null;
+          routine_id: string | null;
           started_at: string;
           user_id: string;
         };
@@ -100,6 +143,7 @@ export type Database = {
           id?: string;
           notes?: string | null;
           rpe?: number | null;
+          routine_id?: string | null;
           started_at?: string;
           user_id: string;
         };
@@ -410,6 +454,18 @@ export type Database = {
       cancel_account_deletion: {
         Args: Record<string, never>;
         Returns: undefined;
+      };
+      routine_week_summary: {
+        Args: { p_routine: string; p_weeks?: number };
+        Returns: {
+          semana: string;
+          sessoes: number;
+          series: number;
+          volume: number;
+          minutos: number;
+          rpe_medio: number | null;
+          prontidao_media: number | null;
+        }[];
       };
       last_performance: {
         Args: Record<string, never>;

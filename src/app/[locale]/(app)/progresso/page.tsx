@@ -4,6 +4,11 @@ import { redirect } from "next/navigation";
 
 import { AppHeader } from "@/components/app/app-header";
 import { LoadSummary, type LoadDay, type ZoneRow } from "@/components/app/load-summary";
+import {
+  RoutineProgress,
+  type RoutineWeek,
+  type RoutineWeeks,
+} from "@/components/app/routine-progress";
 import { MuscleVolume, type MuscleRow } from "@/components/app/muscle-volume";
 import {
   ReadinessHistory,
@@ -88,6 +93,26 @@ export default async function ProgressPage({
       supabase.rpc("training_load_summary", { p_from: from, p_to: to }),
       supabase.rpc("cardio_minutes_by_zone", { p_from: from, p_to: to }),
     ]);
+
+  // Semana a semana de cada treino guardado. Três chega: são os que a pessoa
+  // está mesmo a repetir, e cada um custa uma consulta.
+  const { data: rotinasAtivas } = await supabase
+    .from("routines")
+    .select("id, name")
+    .eq("user_id", user.id)
+    .is("archived_at", null)
+    .order("created_at", { ascending: false })
+    .limit(3);
+
+  const rotinasComSemanas: RoutineWeeks[] = await Promise.all(
+    (rotinasAtivas ?? []).map(async (r) => {
+      const { data } = await supabase.rpc("routine_week_summary", {
+        p_routine: r.id,
+        p_weeks: 8,
+      });
+      return { id: r.id, name: r.name, semanas: (data ?? []) as RoutineWeek[] };
+    }),
+  );
 
   const linhas = series ?? [];
   const volumeTotal = linhas.reduce((total, s) => total + Number(s.volume_kg ?? 0), 0);
@@ -175,6 +200,12 @@ export default async function ProgressPage({
           zonas={(zonasCardio ?? []) as ZoneRow[]}
           copy={copy}
           zoneLabels={dict.workout.zones}
+        />
+
+        <RoutineProgress
+          rotinas={rotinasComSemanas}
+          copy={dict.workout.routines}
+          locale={locale}
         />
 
         <ReadinessHistory

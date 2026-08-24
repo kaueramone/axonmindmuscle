@@ -14,16 +14,20 @@ import { prescriptionFor } from "@/lib/readiness/score";
 import { createClient } from "@/lib/supabase/server";
 import { localDate } from "@/lib/workout/periods";
 import type { LastPerformance, Zone } from "@/lib/workout/progression";
+import { RoutineList, type RoutineSummary } from "@/components/app/routine-list";
 
 export const metadata: Metadata = { title: "Treino", robots: { index: false } };
 
 export default async function WorkoutPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ rotina?: string }>;
 }) {
   const { locale: rawLocale } = await params;
   const locale = assertLocale(rawLocale);
+  const { rotina } = await searchParams;
   const dict = await getDictionary(locale);
 
   const supabase = await createClient();
@@ -107,6 +111,25 @@ export default async function WorkoutPage({
     };
   }
 
+  // Treinos guardados, para repetir sem os voltar a montar.
+  const { data: rotinas } = await supabase
+    .from("routines")
+    .select("id, name, routine_exercises(count)")
+    .eq("user_id", user.id)
+    .is("archived_at", null)
+    .order("created_at", { ascending: false });
+
+  const routines: RoutineSummary[] = (rotinas ?? []).map((r) => ({
+    id: r.id,
+    name: r.name,
+    exercises:
+      (r.routine_exercises as unknown as { count: number }[] | null)?.[0]?.count ?? 0,
+  }));
+
+  // Só aceitamos uma rotina que seja mesmo desta pessoa: o identificador vem
+  // do endereço, e o endereço é escrito por quem quiser.
+  const routineId = rotina && routines.some((r) => r.id === rotina) ? rotina : null;
+
   // Uma sessão por terminar significa treino a decorrer.
   const { data: aberta } = await supabase
     .from("workout_sessions")
@@ -130,7 +153,11 @@ export default async function WorkoutPage({
         eyebrow={dict.common.tagline}
       />
 
-      <div className="mx-auto max-w-2xl px-5 pt-6">
+      <div className="mx-auto flex max-w-2xl flex-col gap-7 px-5 pt-6">
+        {!aberta && !routineId ? (
+          <RoutineList routines={routines} copy={dict.workout.routines} locale={locale} />
+        ) : null}
+
         <WorkoutRunner
           locale={locale}
           dict={dict}
@@ -139,6 +166,7 @@ export default async function WorkoutPage({
           existingSessionId={aberta?.id ?? null}
           readiness={readiness}
           lastByExercise={lastByExercise}
+          routineId={routineId}
         />
       </div>
     </>

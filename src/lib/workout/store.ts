@@ -23,7 +23,13 @@ export type PendingSet = {
   completed_at: string;
 };
 
-type PendingSession = { id: string; user_id: string; started_at: string };
+type PendingSession = {
+  id: string;
+  user_id: string;
+  started_at: string;
+  /** A rotina de que esta sessão faz parte, quando veio de uma. */
+  routine_id: string | null;
+};
 
 const SETS_KEY = "axon-series-pendentes";
 const SESSIONS_KEY = "axon-sessoes-pendentes";
@@ -102,11 +108,16 @@ export async function flushQueue(): Promise<{ sessions: number; sets: number }> 
  */
 export async function startSession(
   userId: string,
+  routineId: string | null = null,
 ): Promise<{ id: string; online: boolean }> {
   const supabase = createClient();
 
   const resultado = await comLimite(
-    supabase.from("workout_sessions").insert({ user_id: userId }).select("id").single(),
+    supabase
+      .from("workout_sessions")
+      .insert({ user_id: userId, routine_id: routineId })
+      .select("id")
+      .single(),
   );
 
   if (resultado && !resultado.error && resultado.data) {
@@ -116,7 +127,12 @@ export async function startSession(
   const local = crypto.randomUUID();
   write<PendingSession>(SESSIONS_KEY, [
     ...read<PendingSession>(SESSIONS_KEY),
-    { id: local, user_id: userId, started_at: new Date().toISOString() },
+    {
+      id: local,
+      user_id: userId,
+      started_at: new Date().toISOString(),
+      routine_id: routineId,
+    },
   ]);
   return { id: local, online: false };
 }

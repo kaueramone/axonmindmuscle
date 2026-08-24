@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { AxonRunner } from "@/components/workout/axon-runner";
 import { ExerciseBrief } from "@/components/workout/exercise-brief";
+import { SaveRoutine } from "@/components/workout/save-routine";
 import {
   ExercisePicker,
   type ExerciseOption,
@@ -140,6 +141,7 @@ export function WorkoutRunner({
   existingSessionId,
   readiness,
   lastByExercise,
+  routineId,
 }: {
   locale: Locale;
   dict: Dict;
@@ -149,6 +151,8 @@ export function WorkoutRunner({
   readiness: ReadinessHint | null;
   /** O que a pessoa fez da última vez em cada exercício, por id. */
   lastByExercise: Record<string, LastPerformance>;
+  /** A rotina que esta sessão repete, quando veio de uma. */
+  routineId: string | null;
 }) {
   const copy = dict.workout;
 
@@ -218,7 +222,7 @@ export function WorkoutRunner({
     setBusy(true);
     let id = sessionId;
     if (!id) {
-      const sessao = await startSession(userId);
+      const sessao = await startSession(userId, routineId);
       id = sessao.id;
       setSessionId(id);
       if (!sessao.online) setQueued(true);
@@ -1058,6 +1062,12 @@ export function WorkoutRunner({
               </Card>
             ))}
           </div>
+
+          {/* Guardar aqui e não noutro sítio: é o único momento em que a
+              pessoa tem a lista toda fresca e sabe que aquilo resultou. */}
+          {sessionId && !routineId ? (
+            <SaveRoutine sessionId={sessionId} copy={copy.routines} />
+          ) : null}
 
           <ButtonLink
             href={route(locale, "today")}

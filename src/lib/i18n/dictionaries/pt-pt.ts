@@ -682,6 +682,31 @@ const dictionary = {
   },
 
   workout: {
+    routines: {
+      saveTitle: "Guardar como treino",
+      saveBody:
+        "Repete-o quando quiseres, e passas a poder ver como cada semana correu face à anterior.",
+      savePlaceholder: "Treino A",
+      saveCta: "Guardar",
+      saved: "Guardado. Já o podes repetir a partir do ecrã de treino.",
+      saveFailed: "Não foi possível guardar. Tenta novamente.",
+      saveEmpty: "Dá-lhe um nome primeiro.",
+      saveEmptySession: "Este treino não tem séries para guardar.",
+      listTitle: "Os teus treinos",
+      exercises: "{n} exercícios",
+      weekTitle: "Semana a semana",
+      weekNone:
+        "Ainda não há duas semanas para comparar. Repete este treino e volta aqui.",
+      weekOf: "Semana de {date}",
+      weekSessions: "Sessões",
+      weekVolume: "Volume",
+      weekRpe: "Esforço",
+      weekReadiness: "Prontidão",
+      weekVolumeUnit: "quilos levantados",
+      weekOfShort: "Semana",
+      weekHint:
+        "Volume são os {unit} na semana. Mais volume com o mesmo esforço é progresso; o mesmo volume com mais esforço é um aviso.",
+    },
     title: "Treino",
     suggestFirst:
       "Primeira vez neste exercício. Escolhe um valor que consigas controlar do princípio ao fim — a partir da próxima, a AXON sugere sozinha.",
