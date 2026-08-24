@@ -583,6 +583,9 @@ const dictionary: Dict = {
       csvHint: "Treinos, séries, cargas, RIR e prontidão, em arquivos que o Excel abre",
       jsonLabel: "Backup completo da conta",
       jsonHint: "Tudo em um arquivo estruturado só",
+      pdfLabel: "Relatório de evolução",
+      pdfHint: "Cargas, volume, melhores marcas e prontidão, em PDF",
+      pdfLocked: "Disponível no plano PRO",
       deleteTitle: "Apagar a conta",
       deleteBody:
         "Você fica com três meses para exportar o histórico ou voltar atrás. Passado esse prazo apagamos tudo em definitivo, e aí não tem como recuperar.",

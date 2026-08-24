@@ -455,6 +455,17 @@ export type Database = {
         Args: Record<string, never>;
         Returns: undefined;
       };
+      exercise_progress: {
+        Args: { p_from: string; p_to: string };
+        Returns: {
+          exercicio: string;
+          semana: string;
+          carga_maxima: number | null;
+          reps_na_maxima: number | null;
+          volume: number;
+          series: number;
+        }[];
+      };
       readiness_vs_performance: {
         Args: { p_from: string; p_to: string };
         Returns: {

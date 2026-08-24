@@ -4,12 +4,13 @@ import { useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Alert as AlertIcon, Check, Download } from "@/components/ui/icons";
-import { Alert, Card, ListGroup, ListRow, Spinner } from "@/components/ui/surface";
+import { Alert, Badge, Card, ListGroup, ListRow, Spinner } from "@/components/ui/surface";
 import {
   cancelAccountDeletionAction,
   requestAccountDeletionAction,
 } from "@/lib/account/actions";
 import { formatDate, type Locale } from "@/lib/i18n/config";
+import { route } from "@/lib/routes";
 import { t } from "@/lib/i18n/interpolate";
 import type { Dict } from "@/lib/i18n/types";
 
@@ -23,10 +24,12 @@ import type { Dict } from "@/lib/i18n/types";
 export function DataOwnership({
   locale,
   dict,
+  plan,
   deletionRequestedAt,
 }: {
   locale: Locale;
   dict: Dict;
+  plan: "free" | "pro";
   /** Quando a pessoa pediu para apagar a conta, se pediu. */
   deletionRequestedAt: string | null;
 }) {
@@ -72,6 +75,15 @@ export function DataOwnership({
           label={copy.jsonLabel}
           detail={copy.jsonHint}
           href="/api/exportar?formato=json"
+        />
+        {/* O relatório é a única peça desta lista que se paga: os outros dois
+            são os dados da pessoa, este é trabalho feito por cima deles. */}
+        <ListRow
+          icon={<Download className="size-4.5" />}
+          label={copy.pdfLabel}
+          detail={plan === "pro" ? copy.pdfHint : copy.pdfLocked}
+          href={plan === "pro" ? "/api/relatorio?meses=6" : route(locale, "plans")}
+          trailing={plan === "pro" ? null : <Badge tone="accent">PRO</Badge>}
         />
       </ListGroup>
 

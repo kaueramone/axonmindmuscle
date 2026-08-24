@@ -58,6 +58,7 @@ export default async function AccountPage({
         <DataOwnership
           locale={locale}
           dict={dict}
+          plan={profile?.plan ?? "free"}
           deletionRequestedAt={profile?.deletion_requested_at ?? null}
         />
       </div>
