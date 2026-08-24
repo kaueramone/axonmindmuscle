@@ -5,6 +5,7 @@ import { LogoSymbol, LogoWordmark } from "@/components/brand/logo";
 import { AxonField } from "@/components/marketing/axon-field";
 import { MetronomeDemo } from "@/components/marketing/metronome-demo";
 import { Reveal } from "@/components/marketing/reveal";
+import { SecaoFoto } from "@/components/marketing/secao-foto";
 import { ButtonLink } from "@/components/ui/button";
 import { ArrowRight, Check, Sparkle } from "@/components/ui/icons";
 import { Badge } from "@/components/ui/surface";
@@ -12,21 +13,7 @@ import { getDictionary } from "@/lib/i18n";
 import { assertLocale, marketByLocale, type Locale } from "@/lib/i18n/config";
 import { t } from "@/lib/i18n/interpolate";
 import { route } from "@/lib/routes";
-import {
-  billingEnabled,
-  fetchFoundersDiscounts,
-  fetchPrices,
-  type BillingInterval,
-  type PriceView,
-} from "@/lib/stripe/server";
 import { SITE_URL } from "@/lib/utils";
-
-/**
- * A página é pública e o preço muda raramente, por isso é servida do cache e
- * revalidada de hora a hora: sem isto, cada visita à landing page passava a
- * bater no Stripe.
- */
-export const revalidate = 3600;
 
 export async function generateMetadata({
   params,
@@ -68,32 +55,6 @@ export default async function FitnessLandingPage({
   const dict = await getDictionary(locale);
   const copy = dict.marketing.fitness;
   const market = marketByLocale[locale];
-
-  // O preço vem do Stripe e não daqui. Se a faturação ainda não estiver
-  // configurada — ou o Stripe não responder — a secção volta ao estado
-  // anterior em vez de rebentar a landing page inteira.
-  let precos: PriceView[] = [];
-  let descontos: Partial<Record<BillingInterval, number>> = {};
-  if (billingEnabled()) {
-    try {
-      [precos, descontos] = await Promise.all([
-        fetchPrices(market.market, market.intl),
-        fetchFoundersDiscounts(),
-      ]);
-    } catch (erro) {
-      console.error("[lp] preços indisponíveis:", (erro as Error)?.message);
-    }
-  }
-
-  const mensal = precos.find((p) => p.interval === "month") ?? null;
-  const descontoMensal = descontos.month;
-  const mensalComDesconto =
-    mensal && descontoMensal
-      ? new Intl.NumberFormat(market.intl, {
-          style: "currency",
-          currency: mensal.currency,
-        }).format(mensal.amount * (1 - descontoMensal / 100))
-      : null;
 
   return (
     <>
@@ -150,7 +111,8 @@ export default async function FitnessLandingPage({
       </section>
 
       {/* ---------------- Três pilares ---------------- */}
-      <section className="border-t border-hairline">
+      <section className="relative isolate border-t border-hairline">
+        <SecaoFoto src="/lp/academia.jpg" posicao="center 40%" />
         <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-28">
           <Reveal className="max-w-2xl">
             <h2 className="text-[clamp(1.75rem,4vw,2.75rem)] leading-tight text-fg">
@@ -204,7 +166,8 @@ export default async function FitnessLandingPage({
       </section>
 
       {/* ---------------- Prontidão ---------------- */}
-      <section className="border-t border-hairline">
+      <section className="relative isolate border-t border-hairline">
+        <SecaoFoto src="/lp/casa.jpg" posicao="center 45%" />
         <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 py-20 sm:px-8 sm:py-28 lg:grid-cols-2">
           <Reveal delay={120} className="order-2 lg:order-1">
             <div className="flex flex-col gap-3">
@@ -265,7 +228,8 @@ export default async function FitnessLandingPage({
       </section>
 
       {/* ---------------- Evidência ---------------- */}
-      <section className="border-t border-hairline bg-bg-sunken/40">
+      <section className="relative isolate border-t border-hairline bg-bg-sunken/40">
+        <SecaoFoto src="/lp/ar-livre.jpg" posicao="center 35%" />
         <div className="mx-auto max-w-3xl px-5 py-20 text-center sm:px-8 sm:py-28">
           <Reveal>
             <Sparkle className="mx-auto size-8 text-accent" />
@@ -325,31 +289,8 @@ export default async function FitnessLandingPage({
               <article className="flex h-full flex-col rounded-2xl border border-hairline bg-surface p-7">
                 <div className="flex items-center justify-between">
                   <h3 className="text-title3 text-fg">{copy.pricingProTitle}</h3>
-                  {mensal ? (
-                    mensalComDesconto ? (
-                      <Badge tone="accent">{copy.pricingProBadge}</Badge>
-                    ) : null
-                  ) : (
-                    <Badge>{dict.common.soon}</Badge>
-                  )}
+                  <Badge>{dict.common.soon}</Badge>
                 </div>
-
-                {mensal ? (
-                  <p className="mt-5 flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-                    <span className="text-[2rem] font-bold leading-none tracking-[-0.02em] text-fg">
-                      {mensalComDesconto ?? mensal.formatted}
-                    </span>
-                    {mensalComDesconto ? (
-                      <span className="text-callout text-fg-subtle line-through">
-                        {mensal.formatted}
-                      </span>
-                    ) : null}
-                    <span className="text-footnote text-fg-subtle">
-                      {copy.pricingProMonth}
-                    </span>
-                  </p>
-                ) : null}
-
                 <ul className="mt-6 flex flex-1 flex-col gap-3">
                   {copy.pricingProItems.map((item) => (
                     <li key={item} className="flex items-start gap-2.5">
@@ -358,31 +299,9 @@ export default async function FitnessLandingPage({
                     </li>
                   ))}
                 </ul>
-
-                {mensal ? (
-                  <>
-                    {/* Não se assina a partir daqui: o pagamento pede conta.
-                        O botão leva ao registo e o destino segue com ele até
-                        aos planos, do outro lado da confirmação de email. */}
-                    <ButtonLink
-                      href={`${route(locale, "signUp")}?next=${encodeURIComponent(
-                        route(locale, "plans"),
-                      )}`}
-                      variant="secondary"
-                      className="mt-7"
-                      fullWidth
-                    >
-                      {copy.pricingProCta}
-                    </ButtonLink>
-                    <p className="mt-3 text-footnote leading-relaxed text-fg-subtle">
-                      {copy.pricingProFounders}
-                    </p>
-                  </>
-                ) : (
-                  <p className="mt-7 text-footnote text-fg-subtle">
-                    {t(copy.pricingProNote, { payment: market.paymentMethod })}
-                  </p>
-                )}
+                <p className="mt-7 text-footnote text-fg-subtle">
+                  {t(copy.pricingProNote, { payment: market.paymentMethod })}
+                </p>
               </article>
             </Reveal>
           </div>
@@ -390,7 +309,8 @@ export default async function FitnessLandingPage({
       </section>
 
       {/* ---------------- Fecho ---------------- */}
-      <section className="border-t border-hairline bg-bg-sunken/40">
+      <section className="relative isolate border-t border-hairline bg-bg-sunken/40">
+        <SecaoFoto src="/lp/fecho.jpg" posicao="center 50%" />
         <div className="mx-auto max-w-3xl px-5 py-24 text-center sm:px-8 sm:py-32">
           <Reveal>
             <h2 className="text-[clamp(2rem,5vw,3.25rem)] leading-tight tracking-[-0.03em] text-fg">

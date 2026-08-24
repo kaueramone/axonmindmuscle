@@ -259,6 +259,35 @@
   letter-spacing: -0.01em;
 }
 
+/**
+ * Fundo fotográfico de uma secção da landing page.
+ *
+ * A fotografia entra a 30% de visibilidade e o resto é a identidade: o fundo
+ * do tema por cima dela, mais um véu do azul da marca. As duas camadas saem
+ * dos tokens, por isso o mesmo desenho serve os dois temas — no escuro
+ * escurece, no claro clareia — e o texto por cima continua a ler-se sem se
+ * lhe mexer numa cor que seja.
+ */
+@utility secao-foto {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: -1;
+}
+
+@utility secao-foto-veu {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      175deg,
+      color-mix(in oklab, var(--accent) 16%, transparent),
+      transparent 55%
+    ),
+    color-mix(in oklab, var(--bg) 70%, transparent);
+}
+
 @utility material {
   background-color: var(--material);
   backdrop-filter: saturate(180%) blur(24px);
