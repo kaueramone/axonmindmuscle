@@ -1,7 +1,6 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import type Stripe from "stripe";
 
 import { assertLocale, marketByLocale } from "@/lib/i18n/config";
 import { route } from "@/lib/routes";
@@ -15,23 +14,6 @@ import {
 } from "@/lib/stripe/server";
 import { createClient } from "@/lib/supabase/server";
 import { SITE_URL } from "@/lib/utils";
-
-/**
- * O Managed Payments põe o Stripe como merchant of record: passa a ser ele a
- * calcular e entregar o imposto, e por isso exige automatic_tax ligado. Aqui
- * é a empresa que trata do IVA, portanto desligamos.
- *
- * Desligamos em cada pedido, e não só no painel, porque o Stripe está a ligá-lo
- * por omissão nas contas — uma mudança de omissão do lado deles voltaria a
- * partir o checkout em produção, com o cliente já a olhar para o botão.
- *
- * O parâmetro existe na API mas ainda não nos tipos do SDK (22.5.0). A
- * intersecção evita o `as`: um objeto deste tipo continua a ser aceite onde
- * se espera SessionCreateParams.
- */
-type ParametrosCheckout = Stripe.Checkout.SessionCreateParams & {
-  managed_payments?: { enabled: boolean };
-};
 
 /**
  * Abre o checkout do Stripe para o plano PRO.
@@ -72,6 +54,11 @@ export async function startCheckoutAction(formData: FormData): Promise<void> {
   const price = priceIds(market)[interval];
   if (!price) redirect(`${route(locale, "plans")}?erro=config`);
 
+  // No Brasil, Pix. Mas o Pix só serve subscrições através do Pix Automático,
+  // e este só é oferecido no checkout se enviarmos as condições do mandato —
+  // sem isto, o brasileiro vê apenas cartão.
+  const pix = market === "BR" ? await mandatoPix(price, interval) : null;
+
   // O código dos fundadores vale uma vez por pessoa, e o desconto muda com o
   // período. Se já foi gasto, o pedido segue sem ele em vez de falhar.
   const cupao = foundersCouponId(interval);
@@ -84,7 +71,7 @@ export async function startCheckoutAction(formData: FormData): Promise<void> {
     redirect(`${route(locale, "plans")}?erro=cupao-usado`);
   }
 
-  const parametros: ParametrosCheckout = {
+  const sessao = await stripe().checkout.sessions.create({
     mode: "subscription",
     line_items: [{ price, quantity: 1 }],
 
@@ -109,19 +96,65 @@ export async function startCheckoutAction(formData: FormData): Promise<void> {
     ...(aplicarFundadores
       ? { discounts: [{ coupon: cupao }] }
       : { allow_promotion_codes: true }),
+    ...(pix ? { payment_method_options: { pix: { mandate_options: pix } } } : {}),
     locale: locale === "pt-br" ? "pt-BR" : "pt",
     billing_address_collection: "auto",
     automatic_tax: { enabled: false },
-    managed_payments: { enabled: false },
 
     success_url: `${SITE_URL}${route(locale, "plans")}?estado=sucesso`,
     cancel_url: `${SITE_URL}${route(locale, "plans")}?estado=cancelado`,
-  };
-
-  const sessao = await stripe().checkout.sessions.create(parametros);
+  });
 
   if (sessao.url) redirect(sessao.url);
   redirect(`${route(locale, "plans")}?erro=checkout`);
+}
+
+/**
+ * Condições do mandato de Pix Automático.
+ *
+ * O valor autorizado é o **preço cheio** e não o da primeira cobrança. Com o
+ * FUNDADORES a valer uma vez só, o primeiro pagamento é mais baixo do que
+ * todos os seguintes: um mandato autorizado pelo valor com desconto faria
+ * falhar todas as renovações — e falhar do lado do banco, em silêncio.
+ *
+ * Vai com folga por cima disso, porque o mandato é um teto e não um valor: um
+ * aumento de preço mais tarde teria de trazer a pessoa de volta ao banco para
+ * reautorizar. A folga é o que evita esse regresso.
+ */
+async function mandatoPix(
+  priceId: string,
+  interval: BillingInterval,
+): Promise<{
+  amount: number;
+  amount_type: "maximum";
+  amount_includes_iof: "always";
+  payment_schedule: "monthly" | "yearly";
+  reference: string;
+} | null> {
+  try {
+    const preco = await stripe().prices.retrieve(priceId);
+    const cheio = preco.unit_amount;
+    if (!cheio) return null;
+
+    // Teto arredondado à dezena de reais acima, para o app do banco mostrar um
+    // número redondo em vez de um valor que parece calculado à pressa.
+    const comFolga = Math.ceil((cheio * 1.25) / 1000) * 1000;
+
+    return {
+      amount: comFolga,
+      amount_type: "maximum",
+      // A empresa absorve o IOF: o cliente vê no banco exatamente o valor que
+      // a página anuncia, e os 3,5% saem da liquidação.
+      amount_includes_iof: "always",
+      payment_schedule: interval === "year" ? "yearly" : "monthly",
+      reference: "AXON Mind-Muscle",
+    };
+  } catch (erro) {
+    // Sem as condições do mandato o Pix não aparece, mas o cartão continua a
+    // funcionar. Falhar o checkout inteiro por causa disto seria pior.
+    console.error("[stripe] mandato Pix indisponível:", (erro as Error)?.message);
+    return null;
+  }
 }
 
 /** Portal do Stripe: cancelar, trocar de plano, ver faturas. */
