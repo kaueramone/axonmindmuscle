@@ -717,6 +717,8 @@ const dictionary: Dict = {
         "Volume são os {unit} na semana. Mais volume com o mesmo esforço é progresso; o mesmo volume com mais esforço é um aviso.",
     },
     title: "Treino",
+    offlineTraining:
+      "Sem rede. Você está treinando com o que ficou salvo da última vez que abriu — as séries são gravadas aqui e sobem sozinhas quando houver conexão.",
     suggestFirst:
       "Primeira vez neste exercício. Escolha um valor que consiga controlar do começo ao fim — da próxima vez, a AXON sugere sozinha.",
     suggestUp:

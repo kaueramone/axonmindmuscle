@@ -167,6 +167,7 @@ export function WorkoutRunner({
     Math.min(4, 2 + (readiness?.rirDelta ?? 0)),
   );
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
+  const [semRede, setSemRede] = useState(false);
   const [sound, setSound] = useState(false);
   const [haptics, setHaptics] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -198,9 +199,19 @@ export function WorkoutRunner({
   /* Escoa séries que tenham ficado em fila num treino anterior. */
   useEffect(() => {
     void flushQueue();
-    const onOnline = () => void flushQueue();
+    const onOnline = () => {
+      setSemRede(false);
+      void flushQueue();
+    };
+    const onOffline = () => setSemRede(true);
+
+    setSemRede(!navigator.onLine);
     window.addEventListener("online", onOnline);
-    return () => window.removeEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
   }, []);
 
   /* Contagem do descanso */
@@ -485,6 +496,10 @@ export function WorkoutRunner({
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Sem rede, o ecrã veio do que ficou guardado da última vez. Dizê-lo é
+          o que separa "está a funcionar sem net" de "isto está a mostrar-me
+          números velhos e eu não sabia". */}
+      {semRede ? <Alert tone="info">{copy.offlineTraining}</Alert> : null}
       {queued ? <Alert tone="info">{copy.offlineQueued}</Alert> : null}
 
       {step === "picking" ? (
