@@ -26,9 +26,28 @@ export function stripe(): Stripe {
   return cliente;
 }
 
-/** Verdadeiro quando há configuração suficiente para mostrar planos. */
+/**
+ * Verdadeiro quando há configuração suficiente para mostrar planos.
+ *
+ * Quando falta alguma coisa, regista **os nomes** que faltam — nunca valores.
+ * Sem isto, uma variável mal escrita e uma chave sem permissões produzem
+ * exatamente a mesma página em branco, e não há como distinguir as duas.
+ */
 export function billingEnabled(): boolean {
-  return Boolean(process.env.STRIPE_SECRET_KEY) && priceIds("PT").month !== "";
+  const obrigatorias = [
+    "STRIPE_SECRET_KEY",
+    "STRIPE_PRICE_PRO_MONTH_EUR",
+    "STRIPE_PRICE_PRO_YEAR_EUR",
+    "STRIPE_PRICE_PRO_MONTH_BRL",
+    "STRIPE_PRICE_PRO_YEAR_BRL",
+  ];
+  const emFalta = obrigatorias.filter((nome) => !process.env[nome]);
+
+  if (emFalta.length > 0) {
+    console.error("[stripe] variáveis de ambiente em falta:", emFalta.join(", "));
+    return false;
+  }
+  return true;
 }
 
 export type BillingInterval = "month" | "year";
@@ -119,6 +138,15 @@ export async function fetchPrices(
     });
 
   const resultados = await Promise.allSettled(pedidos);
+
+  for (const r of resultados) {
+    if (r.status === "rejected") {
+      // A mensagem do Stripe diz sempre porquê: preço inexistente, chave do
+      // modo errado, ou permissões a menos numa chave restrita.
+      console.error("[stripe] falha a ler preço:", (r.reason as Error)?.message);
+    }
+  }
+
   return resultados
     .filter(
       (r): r is PromiseFulfilledResult<PriceView> => r.status === "fulfilled",

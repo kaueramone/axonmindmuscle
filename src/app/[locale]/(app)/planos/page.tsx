@@ -70,7 +70,8 @@ export default async function PlansPage({
         fetchPrices(market, marketByLocale[locale].intl),
         fetchFoundersDiscounts(),
       ]);
-    } catch {
+    } catch (erro) {
+      console.error("[stripe] planos indisponíveis:", (erro as Error)?.message);
       precos = [];
     }
   }
