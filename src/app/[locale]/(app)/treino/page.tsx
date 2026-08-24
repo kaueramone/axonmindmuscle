@@ -13,6 +13,7 @@ import { route } from "@/lib/routes";
 import { prescriptionFor } from "@/lib/readiness/score";
 import { createClient } from "@/lib/supabase/server";
 import { localDate } from "@/lib/workout/periods";
+import type { LastPerformance, Zone } from "@/lib/workout/progression";
 
 export const metadata: Metadata = { title: "Treino", robots: { index: false } };
 
@@ -90,6 +91,22 @@ export default async function WorkoutPage({
       }
     : null;
 
+  // O que a pessoa fez da última vez em cada exercício. É isto que permite ao
+  // treino dizer um peso em vez de uma percentagem.
+  const { data: anteriores } = await supabase.rpc("last_performance");
+
+  const lastByExercise: Record<string, LastPerformance> = {};
+  for (const linha of anteriores ?? []) {
+    lastByExercise[linha.exercise_id] = {
+      performedAt: linha.performed_at,
+      weightKg: linha.weight_kg,
+      reps: linha.reps,
+      rir: linha.rir,
+      durationS: linha.duration_s,
+      intensityZone: linha.intensity_zone as Zone | null,
+    };
+  }
+
   // Uma sessão por terminar significa treino a decorrer.
   const { data: aberta } = await supabase
     .from("workout_sessions")
@@ -121,6 +138,7 @@ export default async function WorkoutPage({
           exercises={exercises}
           existingSessionId={aberta?.id ?? null}
           readiness={readiness}
+          lastByExercise={lastByExercise}
         />
       </div>
     </>

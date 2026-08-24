@@ -24,6 +24,11 @@ import {
   startSession,
   tempoToColumns,
 } from "@/lib/workout/store";
+import {
+  suggest,
+  type LastPerformance,
+  type Suggestion,
+} from "@/lib/workout/progression";
 import { useMetronome, type Tempo } from "@/lib/workout/use-metronome";
 import { formatDuration, useTimer } from "@/lib/workout/use-timer";
 import type { ReadinessState } from "@/lib/readiness/score";
@@ -134,6 +139,7 @@ export function WorkoutRunner({
   exercises,
   existingSessionId,
   readiness,
+  lastByExercise,
 }: {
   locale: Locale;
   dict: Dict;
@@ -141,6 +147,8 @@ export function WorkoutRunner({
   exercises: ExerciseOption[];
   existingSessionId: string | null;
   readiness: ReadinessHint | null;
+  /** O que a pessoa fez da última vez em cada exercício, por id. */
+  lastByExercise: Record<string, LastPerformance>;
 }) {
   const copy = dict.workout;
 
@@ -154,6 +162,7 @@ export function WorkoutRunner({
   const [rir, setRir] = useState<number | null>(
     Math.min(4, 2 + (readiness?.rirDelta ?? 0)),
   );
+  const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
   const [sound, setSound] = useState(false);
   const [haptics, setHaptics] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -480,6 +489,21 @@ export function WorkoutRunner({
           copy={copy}
           onPick={(escolhido) => {
             setExercise(escolhido);
+
+            // O número entra já preenchido. A pessoa pode mexer — é sugestão,
+            // não imposição — mas não tem de o descobrir sozinha.
+            const proposta = suggest(
+              lastByExercise[escolhido.id] ?? null,
+              readiness,
+              escolhido.tracking === "time",
+            );
+            setSuggestion(proposta);
+            setWeight(proposta.weightKg != null ? String(proposta.weightKg) : "");
+            if (proposta.reps != null) setTargetReps(proposta.reps);
+            if (proposta.durationS != null) {
+              setTargetMinutes(Math.max(1, Math.round(proposta.durationS / 60)));
+            }
+
             setStep("configuring");
           }}
         />
@@ -496,14 +520,12 @@ export function WorkoutRunner({
             {exercise.name}
           </button>
 
-          {readiness && readiness.rirDelta > 0 ? (
+          {/* Onde antes estava a percentagem em cru — "Carga sugerida −8%" —
+              está agora o número já feito e a razão dele. A conta é do produto,
+              não de quem está de pé no ginásio. */}
+          {suggestion ? (
             <Alert tone="info">
-              <strong className="font-semibold">
-                {dict.readiness.states[readiness.state]}.
-              </strong>{" "}
-              {dict.readiness.adjustLoad}{" "}
-              {Math.round(readiness.loadDelta * 100)}% ·{" "}
-              {dict.readiness.adjustRir} +{readiness.rirDelta}
+              {explicaSugestao(suggestion, porTempo, copy, locale)}
             </Alert>
           ) : null}
 
@@ -1048,4 +1070,48 @@ export function WorkoutRunner({
       ) : null}
     </div>
   );
+}
+
+/**
+ * A frase que substitui a percentagem. Diz o número de hoje e de onde veio —
+ * sem isso a sugestão é um palpite anónimo, e a pessoa não tem como julgar se
+ * confia nela.
+ */
+function explicaSugestao(
+  s: Suggestion,
+  porTempo: boolean,
+  copy: Dict["workout"],
+  locale: Locale,
+): string {
+  if (s.basis === "primeira" || !s.last) return copy.suggestFirst;
+
+  const nf = new Intl.NumberFormat(locale === "pt-br" ? "pt-BR" : "pt-PT", {
+    maximumFractionDigits: 2,
+  });
+
+  const descreve = (
+    kg: number | null,
+    reps: number | null,
+    segundos: number | null,
+  ): string =>
+    porTempo
+      ? t(copy.suggestMinutes, { n: String(Math.round((segundos ?? 0) / 60)) })
+      : kg != null
+        ? t(copy.suggestKg, { n: nf.format(kg), reps: String(reps ?? "") })
+        : t(copy.suggestReps, { reps: String(reps ?? "") });
+
+  const hoje = descreve(s.weightKg, s.reps, s.durationS);
+  const antes = descreve(s.last.weightKg, s.last.reps, s.last.durationS);
+
+  if (s.basis === "progride") {
+    return t(copy.suggestUp, {
+      value: hoje,
+      last: antes,
+      rir: String(s.last.rir ?? 0),
+    });
+  }
+  if (s.basis === "prontidao") {
+    return t(copy.suggestEased, { value: hoje, last: antes });
+  }
+  return t(copy.suggestSame, { value: hoje });
 }

@@ -402,6 +402,18 @@ export type Database = {
           total: number;
         }[];
       };
+      last_performance: {
+        Args: Record<string, never>;
+        Returns: {
+          exercise_id: string;
+          performed_at: string;
+          weight_kg: number | null;
+          reps: number | null;
+          rir: number | null;
+          duration_s: number | null;
+          intensity_zone: Database["public"]["Enums"]["intensity_zone"] | null;
+        }[];
+      };
       readiness_context: {
         Args: Record<string, never>;
         Returns: {

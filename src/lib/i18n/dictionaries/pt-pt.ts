@@ -659,6 +659,16 @@ const dictionary = {
 
   workout: {
     title: "Treino",
+    suggestFirst:
+      "Primeira vez neste exercício. Escolhe um valor que consigas controlar do princípio ao fim — a partir da próxima, a AXON sugere sozinha.",
+    suggestUp:
+      "Hoje {value}. Da última vez foram {last} e sobraram-te {rir} repetições na reserva.",
+    suggestSame: "Hoje {value}, tal como da última vez.",
+    suggestEased:
+      "Hoje {value}, em vez de {last}. A prontidão com que chegaste pede menos.",
+    suggestKg: "{n} kg × {reps}",
+    suggestReps: "{reps} repetições",
+    suggestMinutes: "{n} min",
     startCta: "Iniciar treino",
     startBody: "Escolhe o exercício, define a cadência e a AXON marca o ritmo.",
     resumeCta: "Retomar treino",
