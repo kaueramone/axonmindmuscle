@@ -209,6 +209,62 @@ export type Database = {
         };
         Relationships: [];
       };
+      subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean;
+          created_at: string;
+          currency: string | null;
+          current_period_end: string | null;
+          customer_id: string;
+          id: string;
+          interval: string | null;
+          price_id: string | null;
+          status: Database["public"]["Enums"]["subscription_status"];
+          trial_end: string | null;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          cancel_at_period_end?: boolean;
+          created_at?: string;
+          currency?: string | null;
+          current_period_end?: string | null;
+          customer_id: string;
+          id: string;
+          interval?: string | null;
+          price_id?: string | null;
+          status: Database["public"]["Enums"]["subscription_status"];
+          trial_end?: string | null;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["subscriptions"]["Insert"]>;
+        Relationships: [];
+      };
+      coupon_redemptions: {
+        Row: {
+          user_id: string;
+          code: string;
+          subscription_id: string | null;
+          coupon_id: string | null;
+          redeemed_at: string;
+        };
+        Insert: {
+          user_id: string;
+          code: string;
+          subscription_id?: string | null;
+          coupon_id?: string | null;
+          redeemed_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["coupon_redemptions"]["Insert"]>;
+        Relationships: [];
+      };
+      stripe_events: {
+        Row: { id: string; type: string; received_at: string };
+        Insert: { id: string; type: string; received_at?: string };
+        Update: Partial<Database["public"]["Tables"]["stripe_events"]["Insert"]>;
+        Relationships: [];
+      };
       profiles: {
         Row: {
           avatar_url: string | null;
@@ -224,6 +280,7 @@ export type Database = {
           onboarding_completed_at: string | null;
           plan: Database["public"]["Enums"]["user_plan"];
           role: Database["public"]["Enums"]["user_role"];
+          stripe_customer_id: string | null;
           theme: Database["public"]["Enums"]["theme_preference"];
           timezone: string;
           updated_at: string;
@@ -244,6 +301,7 @@ export type Database = {
           onboarding_completed_at?: string | null;
           plan?: Database["public"]["Enums"]["user_plan"];
           role?: Database["public"]["Enums"]["user_role"];
+          stripe_customer_id?: string | null;
           theme?: Database["public"]["Enums"]["theme_preference"];
           timezone?: string;
           updated_at?: string;
@@ -264,6 +322,7 @@ export type Database = {
           onboarding_completed_at?: string | null;
           plan?: Database["public"]["Enums"]["user_plan"];
           role?: Database["public"]["Enums"]["user_role"];
+          stripe_customer_id?: string | null;
           theme?: Database["public"]["Enums"]["theme_preference"];
           timezone?: string;
           updated_at?: string;
@@ -419,6 +478,15 @@ export type Database = {
       exercise_tracking: "reps" | "time";
       intensity_zone: "facil" | "moderado" | "forte";
       user_role: "member" | "admin";
+      subscription_status:
+        | "trialing"
+        | "active"
+        | "past_due"
+        | "canceled"
+        | "incomplete"
+        | "incomplete_expired"
+        | "unpaid"
+        | "paused";
       muscle_group:
         | "peito"
         | "costas"
@@ -474,5 +542,7 @@ export type ExerciseMediaType = Enums<"exercise_media_type">;
 export type ExerciseTracking = Enums<"exercise_tracking">;
 export type IntensityZone = Enums<"intensity_zone">;
 export type UserRole = Enums<"user_role">;
+export type SubscriptionStatus = Enums<"subscription_status">;
+export type Subscription = Tables<"subscriptions">;
 export type WorkoutSession = Tables<"workout_sessions">;
 export type WorkoutSet = Tables<"workout_sets">;

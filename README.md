@@ -355,3 +355,72 @@ de chaves.
 
 Os tokens do Turnstile são de uso único: cada erro devolvido pelo servidor
 repõe o widget, senão a segunda tentativa enviaria um token já gasto.
+
+## Pagamentos (Stripe)
+
+Conta do cliente registada em **Portugal**, liquidação em EUR. O plano PRO
+existe em dois períodos e duas moedas: euro para o mercado PT, real para o BR.
+A moeda não é uma escolha na página — vem do mercado do perfil.
+
+### O que os métodos locais permitem
+
+| | MB WAY (PT) | Pix (BR) |
+|---|---|---|
+| Conta portuguesa aceita | Sim | Sim, liquidação em EUR |
+| Cobranca recorrente automatica | **Não** | **Sim**, via Pix Automático |
+| Checkout em modo subscrição | Não suportado | Só através do Pix Automático |
+| A contar | Limite diário de 1.000 € por omissão | IOF de 3,5% sobre o cliente brasileiro |
+
+O MB WAY só funciona em subscrições pelo método `send_invoice`, em que a pessoa
+paga cada fatura à mão — inaceitável em retenção. Por isso **o cartão é a
+espinha da subscrição nos dois mercados**, com o Pix como recorrência real no
+Brasil e o MB WAY reservado a pagamentos avulsos.
+
+### Fluxo do dinheiro
+
+O checkout do Stripe cria a subscrição; o **webhook** é que muda o plano. O
+redirect de sucesso não serve de fonte de verdade — quem paga e fecha o
+separador antes de voltar tem de ficar PRO na mesma.
+
+`profiles.plan` passa a ser espelho da tabela `subscriptions`, mantido por
+gatilho. Um pagamento em atraso (`past_due`) mantém o acesso: é um período de
+tolerância deliberado, para não cortar o produto a quem só tem um cartão
+expirado.
+
+### O código FUNDADORES
+
+25% no mensal, 40% no anual, **uma vez por pessoa**. O Stripe não permite dois
+descontos diferentes atrás do mesmo código promocional, por isso são **dois
+cupões** lá dentro e o código é validado aqui. A tabela `coupon_redemptions`
+tem chave primária `(user_id, code)` — quem o gastou no mensal não o volta a
+ter no anual.
+
+O código só se gasta quando a subscrição existe mesmo, no webhook. Abandonar o
+checkout não o queima.
+
+### Configurar
+
+1. **Stripe → Produtos**: cria o produto PRO e quatro preços recorrentes —
+   7,99 €/mês, 59,90 €/ano, R$ 39,90/mês, R$ 299,90/ano.
+2. **Stripe → Cupões**: dois cupões de percentagem, 25% e 40%. Não cries
+   códigos promocionais para eles; o código é da aplicação.
+3. **Stripe → Métodos de pagamento**: ativa cartão e Pix. O MB WAY pode ficar
+   ativo para pagamentos avulsos, mas não aparecerá no checkout de subscrição.
+4. **Stripe → Webhooks**: destino `https://<domínio>/api/stripe/webhook`,
+   eventos `customer.subscription.created`, `.updated`, `.deleted` e
+   `checkout.session.completed`. Copia o segredo.
+5. **Vercel → Environment Variables**: preenche as chaves listadas em
+   `.env.example`. Começa pelas de **teste**.
+
+A chave secreta e o segredo do webhook nunca entram no repositório.
+
+### Testar antes de producao
+
+```bash
+stripe login
+stripe listen --forward-to localhost:3000/api/stripe/webhook
+stripe trigger customer.subscription.created
+```
+
+O `stripe listen` imprime um `whsec_...` proprio para a sessao local — e esse
+que vai para o `.env.local`, nao o do dashboard.

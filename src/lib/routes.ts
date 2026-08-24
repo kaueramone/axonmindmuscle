@@ -17,6 +17,7 @@ export const segments = {
   profile: "perfil",
   account: "conta",
   admin: "painel",
+  plans: "planos",
   terms: "termos",
   privacy: "privacidade",
 } as const;
@@ -40,6 +41,7 @@ export const protectedSegments: string[] = [
   segments.profile,
   segments.account,
   segments.admin,
+  segments.plans,
 ];
 
 /** Rotas de autenticação — inacessíveis a quem já tem sessão. */

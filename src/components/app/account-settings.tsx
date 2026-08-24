@@ -156,7 +156,8 @@ export function AccountSettings({
           icon={<Download className="size-4.5" />}
           label={copy.plan}
           detail={plan === "pro" ? copy.planPro : copy.planFree}
-          trailing={plan === "free" ? <Badge>{copy.planSoon}</Badge> : null}
+          href={route(locale, "plans")}
+          trailing={plan === "pro" ? <Badge tone="accent">PRO</Badge> : null}
         />
         <ListRow
           icon={<Lock className="size-4.5" />}
