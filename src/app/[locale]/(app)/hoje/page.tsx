@@ -1,9 +1,11 @@
 import { assertLocale } from "@/lib/i18n/config";
 import type { Metadata } from "next";
 
+import Link from "next/link";
+
 import { AppHeader } from "@/components/app/app-header";
 import { Greeting } from "@/components/app/greeting";
-import { Bolt, Sparkle, Users } from "@/components/ui/icons";
+import { Bolt, ChevronRight, Sparkle, Users } from "@/components/ui/icons";
 import { ButtonLink } from "@/components/ui/button";
 import { Badge, Card, ListGroup, ListRow } from "@/components/ui/surface";
 import { route } from "@/lib/routes";
@@ -30,11 +32,12 @@ export default async function TodayPage({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name")
+    .select("display_name, plan")
     .eq("id", user!.id)
     .maybeSingle();
 
   const firstName = profile?.display_name?.split(" ")[0] ?? "";
+  const ehPro = profile?.plan === "pro";
 
   const tools = [
     { icon: <Sparkle className="size-4.5" />, ...pick(copy.tools, "assistant") },
@@ -55,11 +58,32 @@ export default async function TodayPage({
       />
 
       <div className="mx-auto flex max-w-2xl flex-col gap-7 px-5 pt-6">
-        <Greeting
-          name={firstName}
-          labels={dict.app.greeting}
-          className="text-title3 text-fg-muted"
-        />
+        {/* A saudação e o convite ao PRO partilham a linha: o convite fica ao
+            lado em ecrãs largos e desce por baixo no telemóvel, sem nunca
+            empurrar o botão de treinar para fora do primeiro ecrã. */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Greeting
+            name={firstName}
+            labels={dict.app.greeting}
+            className="text-title3 text-fg-muted"
+          />
+
+          {ehPro ? null : (
+            <Link
+              href={route(locale, "plans")}
+              className="flex shrink-0 items-center gap-2.5 rounded-xl border border-accent/25 bg-accent-soft px-3.5 py-2 transition-opacity hover:opacity-80"
+            >
+              <Sparkle className="size-4 shrink-0 text-accent" />
+              <span className="flex flex-col">
+                <span className="text-footnote font-semibold text-accent">
+                  {copy.proTitle}
+                </span>
+                <span className="text-caption text-fg-muted">{copy.proBody}</span>
+              </span>
+              <ChevronRight className="size-4 shrink-0 text-accent/60" />
+            </Link>
+          )}
+        </div>
 
         <Card className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">

@@ -399,6 +399,8 @@ const dictionary: Dict = {
     },
     today: {
       title: "Hoje",
+      proTitle: "Vire PRO",
+      proBody: "Preço de fundador, só durante o pré-lançamento.",
       readinessTitle: "Prontidão",
       readinessPrompt: "Responda a três perguntas para calibrar o dia.",
       readinessCta: "Avaliar prontidão",
@@ -502,6 +504,16 @@ const dictionary: Dict = {
       photoTooLarge: "A imagem tem mais de 2 MB.",
       photoWrongType: "Formato não suportado. Use JPG, PNG ou WebP.",
       photoFailed: "Não foi possível salvar a foto. Tente novamente.",
+      planTitle: "Seu plano",
+      planFree: "Gratuito",
+      planPro: "PRO",
+      planFreeBody:
+        "Você tem o essencial. O PRO abre o histórico completo, a análise detalhada e os protocolos avançados.",
+      planProBody: "Você tem tudo o que a AXON faz. Obrigado por ajudar a fundá-la.",
+      planCta: "Virar PRO",
+      planManage: "Gerenciar assinatura",
+      planFounders:
+        "O desconto de fundador existe só nesta fase de pré-lançamento. Quando a AXON abrir ao público, o preço volta ao normal.",
     },
     plans: {
       title: "Planos",
