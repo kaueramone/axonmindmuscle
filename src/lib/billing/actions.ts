@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import type Stripe from "stripe";
 
 import { assertLocale, marketByLocale } from "@/lib/i18n/config";
 import { route } from "@/lib/routes";
@@ -14,6 +15,23 @@ import {
 } from "@/lib/stripe/server";
 import { createClient } from "@/lib/supabase/server";
 import { SITE_URL } from "@/lib/utils";
+
+/**
+ * O Managed Payments põe o Stripe como merchant of record: passa a ser ele a
+ * calcular e entregar o imposto, e por isso exige automatic_tax ligado. Aqui
+ * é a empresa que trata do IVA, portanto desligamos.
+ *
+ * Desligamos em cada pedido, e não só no painel, porque o Stripe está a ligá-lo
+ * por omissão nas contas — uma mudança de omissão do lado deles voltaria a
+ * partir o checkout em produção, com o cliente já a olhar para o botão.
+ *
+ * O parâmetro existe na API mas ainda não nos tipos do SDK (22.5.0). A
+ * intersecção evita o `as`: um objeto deste tipo continua a ser aceite onde
+ * se espera SessionCreateParams.
+ */
+type ParametrosCheckout = Stripe.Checkout.SessionCreateParams & {
+  managed_payments?: { enabled: boolean };
+};
 
 /**
  * Abre o checkout do Stripe para o plano PRO.
@@ -66,7 +84,7 @@ export async function startCheckoutAction(formData: FormData): Promise<void> {
     redirect(`${route(locale, "plans")}?erro=cupao-usado`);
   }
 
-  const sessao = await stripe().checkout.sessions.create({
+  const parametros: ParametrosCheckout = {
     mode: "subscription",
     line_items: [{ price, quantity: 1 }],
 
@@ -94,10 +112,13 @@ export async function startCheckoutAction(formData: FormData): Promise<void> {
     locale: locale === "pt-br" ? "pt-BR" : "pt",
     billing_address_collection: "auto",
     automatic_tax: { enabled: false },
+    managed_payments: { enabled: false },
 
     success_url: `${SITE_URL}${route(locale, "plans")}?estado=sucesso`,
     cancel_url: `${SITE_URL}${route(locale, "plans")}?estado=cancelado`,
-  });
+  };
+
+  const sessao = await stripe().checkout.sessions.create(parametros);
 
   if (sessao.url) redirect(sessao.url);
   redirect(`${route(locale, "plans")}?erro=checkout`);
