@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { Alert, Badge, Spinner } from "@/components/ui/surface";
-import { setUserRoleAction } from "@/lib/admin/actions";
+import { setUserProAction, setUserRoleAction } from "@/lib/admin/actions";
 import type { UserRole } from "@/lib/supabase/types";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +15,8 @@ export type LinhaUtilizador = {
   market: string;
   locale: string;
   plan: string;
+  /** PRO atribuído por um administrador, por oposição a PRO comprado. */
+  proConcedido: boolean;
   createdAt: string;
   onboarded: boolean;
 };
@@ -59,7 +61,38 @@ export function UsersTable({
               </span>
             </span>
 
-            {l.plan === "pro" ? <Badge tone="accent">PRO</Badge> : null}
+            {l.plan === "pro" ? (
+              <Badge tone="accent">{l.proConcedido ? "PRO dado" : "PRO"}</Badge>
+            ) : null}
+
+            {/* Só se dá e se tira o PRO dado à mão. Quem está mesmo a pagar
+                não aparece aqui como removível: cancelar uma subscrição é no
+                Stripe, não num botão do painel. */}
+            <button
+              type="button"
+              disabled={pendente || (l.plan === "pro" && !l.proConcedido)}
+              title={
+                l.plan === "pro" && !l.proConcedido
+                  ? "Esta conta é PRO por subscrição paga"
+                  : undefined
+              }
+              onClick={() =>
+                iniciar(async () => {
+                  setErro(null);
+                  const r = await setUserProAction(l.id, !l.proConcedido);
+                  if (!r.ok) setErro(r.error);
+                  router.refresh();
+                })
+              }
+              className={cn(
+                "shrink-0 rounded-full border px-3.5 py-1.5 text-caption transition-colors disabled:opacity-50",
+                l.proConcedido
+                  ? "border-accent bg-accent-soft text-accent"
+                  : "border-hairline text-fg-muted hover:text-fg",
+              )}
+            >
+              {l.proConcedido ? "Retirar PRO" : "Dar PRO"}
+            </button>
 
             <button
               type="button"
@@ -98,6 +131,9 @@ export function UsersTable({
         O papel de administrador dá acesso a todos os números da plataforma e à
         edição do catálogo. Ninguém se pode promover a si próprio: a base de dados
         rejeita a alteração feita pela própria conta.
+        {" "}O PRO dado aqui não tem prazo e fica até ser retirado. Não passa
+        pelo Stripe, não é cobrado, e sobrevive a qualquer mudança de
+        subscrição — quem o retirar devolve a conta ao que a subscrição disser.
       </p>
     </div>
   );

@@ -323,6 +323,8 @@ export type Database = {
           market: Database["public"]["Enums"]["market_code"];
           onboarding_completed_at: string | null;
           deletion_requested_at: string | null;
+          pro_granted_at: string | null;
+          pro_granted_by: string | null;
           plan: Database["public"]["Enums"]["user_plan"];
           role: Database["public"]["Enums"]["user_role"];
           stripe_customer_id: string | null;
@@ -453,6 +455,10 @@ export type Database = {
       };
       cancel_account_deletion: {
         Args: Record<string, never>;
+        Returns: undefined;
+      };
+      admin_set_pro: {
+        Args: { p_user: string; p_grant: boolean };
         Returns: undefined;
       };
       exercise_progress: {

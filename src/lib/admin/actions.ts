@@ -165,6 +165,31 @@ export async function setExerciseActiveAction(
   return { ok: true, id };
 }
 
+/**
+ * PRO dado à mão, sem prazo, até um administrador o retirar.
+ *
+ * Passa por uma função na base em vez de escrever em profiles.plan: essa
+ * coluna é território do gatilho que espelha as subscrições, e qualquer
+ * evento do Stripe para esta pessoa devolveria o plano a gratuito. A
+ * concessão vive numa coluna própria e o gatilho respeita-a.
+ */
+export async function setUserProAction(
+  userId: string,
+  grant: boolean,
+): Promise<Resultado> {
+  const { supabase, isAdmin } = await admin();
+  if (!isAdmin) return { ok: false, error: "Sem permissão." };
+
+  const { error } = await supabase.rpc("admin_set_pro", {
+    p_user: userId,
+    p_grant: grant,
+  });
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/", "layout");
+  return { ok: true, id: userId };
+}
+
 export async function setUserRoleAction(
   userId: string,
   role: UserRole,

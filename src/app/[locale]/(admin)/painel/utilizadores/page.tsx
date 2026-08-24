@@ -15,7 +15,9 @@ export default async function AdminUsersPage({
 
   const { data } = await supabase
     .from("profiles")
-    .select("id, display_name, role, market, locale, plan, created_at, onboarding_completed_at")
+    .select(
+      "id, display_name, role, market, locale, plan, created_at, onboarding_completed_at, pro_granted_at",
+    )
     .order("created_at", { ascending: false });
 
   const linhas: LinhaUtilizador[] = (data ?? []).map((p) => ({
@@ -25,6 +27,7 @@ export default async function AdminUsersPage({
     market: p.market,
     locale: p.locale,
     plan: p.plan,
+    proConcedido: p.pro_granted_at != null,
     createdAt: p.created_at,
     onboarded: p.onboarding_completed_at != null,
   }));
