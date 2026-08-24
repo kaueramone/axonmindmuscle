@@ -30,6 +30,20 @@ export function route(locale: Locale, key: RouteKey): string {
   return segment ? `/${locale}/${segment}` : `/${locale}`;
 }
 
+/**
+ * Valida um destino que veio de fora — query string, formulário, email.
+ *
+ * Só caminhos internos passam. Um `next` aceite em cru é um redirecionamento
+ * aberto à espera de acontecer: bastava alguém mandar um link de registo com
+ * `next=//sitio-falso` para a pessoa acabar lá logo a seguir a confirmar o
+ * email, ainda a confiar no que estava a ver.
+ */
+export function safeNext(value: string | null | undefined): string | null {
+  if (!value) return null;
+  if (!value.startsWith("/") || value.startsWith("//")) return null;
+  return value;
+}
+
 /** Rotas que exigem sessão iniciada. */
 export const protectedSegments: string[] = [
   segments.onboarding,

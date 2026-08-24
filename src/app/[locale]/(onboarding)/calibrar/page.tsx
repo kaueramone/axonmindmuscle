@@ -5,18 +5,21 @@ import { redirect } from "next/navigation";
 import { OnboardingWizard } from "@/components/app/onboarding-wizard";
 import { getDictionary } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n/config";
-import { route } from "@/lib/routes";
+import { route, safeNext } from "@/lib/routes";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Calibrar", robots: { index: false } };
 
 export default async function OnboardingPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ next?: string }>;
 }) {
   const { locale: rawLocale } = await params;
   const locale = assertLocale(rawLocale);
+  const { next } = await searchParams;
   const dict = await getDictionary(locale);
 
   const supabase = await createClient();
@@ -31,7 +34,8 @@ export default async function OnboardingPage({
     .eq("id", user.id)
     .maybeSingle();
 
-  if (profile?.onboarding_completed_at) redirect(route(locale, "today"));
+  const destino = safeNext(next);
+  if (profile?.onboarding_completed_at) redirect(destino ?? route(locale, "today"));
 
   const fallbackName =
     profile?.display_name ??
@@ -39,6 +43,11 @@ export default async function OnboardingPage({
     "";
 
   return (
-    <OnboardingWizard locale={locale} dict={dict} defaultName={fallbackName} />
+    <OnboardingWizard
+      locale={locale}
+      dict={dict}
+      defaultName={fallbackName}
+      next={destino}
+    />
   );
 }

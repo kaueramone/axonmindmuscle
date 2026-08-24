@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { SignUpForm } from "@/components/auth/sign-up-form";
 import { getDictionary } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n/config";
+import { safeNext } from "@/lib/routes";
 
 export async function generateMetadata({
   params,
@@ -18,11 +19,14 @@ export async function generateMetadata({
 
 export default async function SignUpPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ next?: string }>;
 }) {
   const { locale: rawLocale } = await params;
   const locale = assertLocale(rawLocale);
+  const { next } = await searchParams;
   const dict = await getDictionary(locale);
 
   return (
@@ -31,7 +35,7 @@ export default async function SignUpPage({
         <h1 className="text-large text-fg">{dict.auth.signUp.title}</h1>
         <p className="mt-2 text-callout text-fg-muted">{dict.auth.signUp.subtitle}</p>
       </div>
-      <SignUpForm locale={locale} dict={dict} />
+      <SignUpForm locale={locale} dict={dict} next={safeNext(next)} />
     </div>
   );
 }

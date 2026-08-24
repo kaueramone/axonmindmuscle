@@ -32,10 +32,13 @@ export function OnboardingWizard({
   locale,
   dict,
   defaultName,
+  next,
 }: {
   locale: Locale;
   dict: Dict;
   defaultName: string;
+  /** Destino a honrar quando a calibração termina. Null vai para o Hoje. */
+  next?: string | null;
 }) {
   const copy = dict.onboarding;
   const [step, setStep] = useState(0);
@@ -108,6 +111,7 @@ export function OnboardingWizard({
 
       <form action={formAction} className="flex flex-col gap-7">
         <input type="hidden" name="locale" value={locale} />
+        {next ? <input type="hidden" name="next" value={next} /> : null}
         <input type="hidden" name="display_name" value={name} />
         <input type="hidden" name="goal" value={goal ?? ""} />
         <input type="hidden" name="experience" value={experience ?? ""} />

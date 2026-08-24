@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { defaultLocale, isLocale } from "@/lib/i18n/config";
-import { route } from "@/lib/routes";
+import { route, safeNext } from "@/lib/routes";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -16,8 +16,7 @@ export async function GET(request: NextRequest) {
   const locale = isLocale(cookieLocale) ? cookieLocale : defaultLocale;
 
   const fallback = route(locale, "today");
-  const destination =
-    next && next.startsWith("/") && !next.startsWith("//") ? next : fallback;
+  const destination = safeNext(next) ?? fallback;
 
   if (!code) {
     const url = new URL(route(locale, "signIn"), origin);
@@ -47,7 +46,11 @@ export async function GET(request: NextRequest) {
       .maybeSingle();
 
     if (profile && !profile.onboarding_completed_at) {
-      return NextResponse.redirect(new URL(route(locale, "onboarding"), origin));
+      const url = new URL(route(locale, "onboarding"), origin);
+      if (destination !== route(locale, "onboarding")) {
+        url.searchParams.set("next", destination);
+      }
+      return NextResponse.redirect(url);
     }
   }
 

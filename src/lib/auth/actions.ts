@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { defaultLocale, isLocale, marketByLocale, type Locale } from "@/lib/i18n/config";
-import { route } from "@/lib/routes";
+import { route, safeNext } from "@/lib/routes";
 import { createClient } from "@/lib/supabase/server";
 import type {
   ExperienceLevel,
@@ -98,6 +98,12 @@ export async function signUpAction(
 
   const captchaToken = readCaptcha(formData);
 
+  // Quem vem da landing page a olhar para o preço quer acabar nos planos, não
+  // no ecrã de treino. O destino viaja no email de confirmação porque é o
+  // único fio que sobrevive à pessoa sair do browser e voltar noutra altura.
+  const destino =
+    safeNext(String(formData.get("next") ?? "")) ?? route(locale, "onboarding");
+
   if (name.length < 2) return { ok: false, error: "nameRequired" };
   if (!isValidEmail(email)) return { ok: false, error: "invalidEmail" };
   if (password.length < 8) return { ok: false, error: "passwordTooShort" };
@@ -109,9 +115,7 @@ export async function signUpAction(
     password,
     options: {
       captchaToken,
-      emailRedirectTo: `${SITE_URL}/auth/confirm?next=${encodeURIComponent(
-        route(locale, "onboarding"),
-      )}`,
+      emailRedirectTo: `${SITE_URL}/auth/confirm?next=${encodeURIComponent(destino)}`,
       data: {
         display_name: name.slice(0, 60),
         locale,
@@ -312,7 +316,10 @@ export async function completeOnboardingAction(
   if (error) return { ok: false, error: "generic" };
 
   revalidatePath("/", "layout");
-  redirect(route(locale, "today"));
+
+  // O destino que veio do registo sobreviveu ao email e à calibração; é aqui
+  // que se cumpre. Sem ele, a pessoa que clicou no preço acabava no Hoje.
+  redirect(safeNext(String(formData.get("next") ?? "")) ?? route(locale, "today"));
 }
 
 export async function updatePreferencesAction(formData: FormData): Promise<void> {

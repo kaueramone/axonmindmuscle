@@ -139,6 +139,11 @@ const dictionary = {
         "Protocolos avançados",
       ],
       pricingProNote: "Disponível numa fase seguinte. Pagamento em {payment}.",
+      pricingProMonth: "por mês",
+      pricingProBadge: "Preço de fundador",
+      pricingProCta: "Criar conta e assinar",
+      pricingProFounders:
+        "Este valor é da fase de fundadores e não fica. Quando a AXON abrir ao público, o preço passa ao normal — quem entrar agora ajuda a construí-la.",
 
       finalTitle: "O sinal certo, transmitido.",
       finalBody:

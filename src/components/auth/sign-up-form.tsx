@@ -28,7 +28,17 @@ function SubmitButton({ label }: { label: string }) {
   );
 }
 
-export function SignUpForm({ locale, dict }: { locale: Locale; dict: Dict }) {
+export function SignUpForm({
+  locale,
+  dict,
+  next,
+}: {
+  locale: Locale;
+  dict: Dict;
+  /** Para onde ir depois de confirmar o email. Null cai na calibração. */
+  next?: string | null;
+}) {
+  const destino = next ?? route(locale, "onboarding");
   const copy = dict.auth.signUp;
   const [state, formAction] = useActionState<ActionResult | null, FormData>(
     signUpAction,
@@ -80,7 +90,7 @@ export function SignUpForm({ locale, dict }: { locale: Locale; dict: Dict }) {
 
       <GoogleButton
         label={copy.googleCta}
-        next={route(locale, "onboarding")}
+        next={destino}
         onError={() => setOauthError(true)}
       />
 
@@ -88,6 +98,7 @@ export function SignUpForm({ locale, dict }: { locale: Locale; dict: Dict }) {
 
       <form action={formAction} className="flex flex-col gap-4">
         <input type="hidden" name="locale" value={locale} />
+        <input type="hidden" name="next" value={destino} />
 
         <Field
           label={dict.auth.fields.name}

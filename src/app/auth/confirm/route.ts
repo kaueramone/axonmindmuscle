@@ -2,7 +2,7 @@ import { type EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { defaultLocale, isLocale } from "@/lib/i18n/config";
-import { route } from "@/lib/routes";
+import { route, safeNext } from "@/lib/routes";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -18,10 +18,7 @@ export async function GET(request: NextRequest) {
   const cookieLocale = request.cookies.get("axon-locale")?.value;
   const locale = isLocale(cookieLocale) ? cookieLocale : defaultLocale;
 
-  const destination =
-    next && next.startsWith("/") && !next.startsWith("//")
-      ? next
-      : route(locale, "today");
+  const destination = safeNext(next) ?? route(locale, "today");
 
   if (!tokenHash || !type) {
     const url = new URL(route(locale, "signIn"), origin);
@@ -36,6 +33,31 @@ export async function GET(request: NextRequest) {
     const url = new URL(route(locale, "signIn"), origin);
     url.searchParams.set("error", "sessionExpired");
     return NextResponse.redirect(url);
+  }
+
+  // Quem acabou de confirmar o email ainda não calibrou, e a área da app
+  // manda-o para a calibração de qualquer maneira. Se o destino seguisse em
+  // cru, perdia-se ali: vai à boleia para ser honrado no fim.
+  if (type !== "recovery") {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("onboarding_completed_at")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profile && !profile.onboarding_completed_at) {
+        const url = new URL(route(locale, "onboarding"), origin);
+        if (destination !== route(locale, "onboarding")) {
+          url.searchParams.set("next", destination);
+        }
+        return NextResponse.redirect(url);
+      }
+    }
   }
 
   return NextResponse.redirect(new URL(destination, origin));

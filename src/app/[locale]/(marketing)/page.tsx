@@ -12,7 +12,21 @@ import { getDictionary } from "@/lib/i18n";
 import { assertLocale, marketByLocale, type Locale } from "@/lib/i18n/config";
 import { t } from "@/lib/i18n/interpolate";
 import { route } from "@/lib/routes";
+import {
+  billingEnabled,
+  fetchFoundersDiscounts,
+  fetchPrices,
+  type BillingInterval,
+  type PriceView,
+} from "@/lib/stripe/server";
 import { SITE_URL } from "@/lib/utils";
+
+/**
+ * A página é pública e o preço muda raramente, por isso é servida do cache e
+ * revalidada de hora a hora: sem isto, cada visita à landing page passava a
+ * bater no Stripe.
+ */
+export const revalidate = 3600;
 
 export async function generateMetadata({
   params,
@@ -54,6 +68,32 @@ export default async function FitnessLandingPage({
   const dict = await getDictionary(locale);
   const copy = dict.marketing.fitness;
   const market = marketByLocale[locale];
+
+  // O preço vem do Stripe e não daqui. Se a faturação ainda não estiver
+  // configurada — ou o Stripe não responder — a secção volta ao estado
+  // anterior em vez de rebentar a landing page inteira.
+  let precos: PriceView[] = [];
+  let descontos: Partial<Record<BillingInterval, number>> = {};
+  if (billingEnabled()) {
+    try {
+      [precos, descontos] = await Promise.all([
+        fetchPrices(market.market, market.intl),
+        fetchFoundersDiscounts(),
+      ]);
+    } catch (erro) {
+      console.error("[lp] preços indisponíveis:", (erro as Error)?.message);
+    }
+  }
+
+  const mensal = precos.find((p) => p.interval === "month") ?? null;
+  const descontoMensal = descontos.month;
+  const mensalComDesconto =
+    mensal && descontoMensal
+      ? new Intl.NumberFormat(market.intl, {
+          style: "currency",
+          currency: mensal.currency,
+        }).format(mensal.amount * (1 - descontoMensal / 100))
+      : null;
 
   return (
     <>
@@ -285,8 +325,31 @@ export default async function FitnessLandingPage({
               <article className="flex h-full flex-col rounded-2xl border border-hairline bg-surface p-7">
                 <div className="flex items-center justify-between">
                   <h3 className="text-title3 text-fg">{copy.pricingProTitle}</h3>
-                  <Badge>{dict.common.soon}</Badge>
+                  {mensal ? (
+                    mensalComDesconto ? (
+                      <Badge tone="accent">{copy.pricingProBadge}</Badge>
+                    ) : null
+                  ) : (
+                    <Badge>{dict.common.soon}</Badge>
+                  )}
                 </div>
+
+                {mensal ? (
+                  <p className="mt-5 flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+                    <span className="text-[2rem] font-bold leading-none tracking-[-0.02em] text-fg">
+                      {mensalComDesconto ?? mensal.formatted}
+                    </span>
+                    {mensalComDesconto ? (
+                      <span className="text-callout text-fg-subtle line-through">
+                        {mensal.formatted}
+                      </span>
+                    ) : null}
+                    <span className="text-footnote text-fg-subtle">
+                      {copy.pricingProMonth}
+                    </span>
+                  </p>
+                ) : null}
+
                 <ul className="mt-6 flex flex-1 flex-col gap-3">
                   {copy.pricingProItems.map((item) => (
                     <li key={item} className="flex items-start gap-2.5">
@@ -295,9 +358,31 @@ export default async function FitnessLandingPage({
                     </li>
                   ))}
                 </ul>
-                <p className="mt-7 text-footnote text-fg-subtle">
-                  {t(copy.pricingProNote, { payment: market.paymentMethod })}
-                </p>
+
+                {mensal ? (
+                  <>
+                    {/* Não se assina a partir daqui: o pagamento pede conta.
+                        O botão leva ao registo e o destino segue com ele até
+                        aos planos, do outro lado da confirmação de email. */}
+                    <ButtonLink
+                      href={`${route(locale, "signUp")}?next=${encodeURIComponent(
+                        route(locale, "plans"),
+                      )}`}
+                      variant="secondary"
+                      className="mt-7"
+                      fullWidth
+                    >
+                      {copy.pricingProCta}
+                    </ButtonLink>
+                    <p className="mt-3 text-footnote leading-relaxed text-fg-subtle">
+                      {copy.pricingProFounders}
+                    </p>
+                  </>
+                ) : (
+                  <p className="mt-7 text-footnote text-fg-subtle">
+                    {t(copy.pricingProNote, { payment: market.paymentMethod })}
+                  </p>
+                )}
               </article>
             </Reveal>
           </div>
