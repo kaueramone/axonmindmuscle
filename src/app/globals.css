@@ -288,6 +288,63 @@
     color-mix(in oklab, var(--bg) 70%, transparent);
 }
 
+/**
+ * Impulso a percorrer o eixo, para os ecrãs de espera.
+ *
+ * É o mesmo gesto do símbolo da marca: o sinal atravessa o axónio da esquerda
+ * para a direita. O trilho ocupa a largura toda e é ele que se desloca, por
+ * isso a deslocação é exatamente a largura do elemento sem depender de
+ * medidas em código.
+ */
+@utility axon-trilho {
+  position: absolute;
+  inset: 0;
+  animation: axon-percorre 1.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+@utility axon-ponto {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: var(--accent);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 14px 3px color-mix(in oklab, var(--accent) 45%, transparent);
+}
+
+@keyframes axon-percorre {
+  0% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  10%,
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* Quem pediu menos movimento recebe uma pulsação em vez de uma travessia. */
+@media (prefers-reduced-motion: reduce) {
+  .axon-trilho {
+    animation: axon-pulsa 1.8s ease-in-out infinite;
+  }
+  @keyframes axon-pulsa {
+    0%,
+    100% {
+      opacity: 0.35;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+}
+
 @utility material {
   background-color: var(--material);
   backdrop-filter: saturate(180%) blur(24px);
