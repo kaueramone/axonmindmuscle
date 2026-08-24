@@ -66,12 +66,21 @@ export function AccountSettings({
     void updatePreferencesAction(data);
   }
 
-  function changeLocale(next: Locale) {
+  async function changeLocale(next: Locale) {
     document.cookie = `axon-locale=${next};path=/;max-age=${60 * 60 * 24 * 365};samesite=lax`;
     const data = new FormData();
     data.set("preferred_locale", next);
-    void updatePreferencesAction(data);
-    window.location.href = route(next, "account");
+
+    // Esperar pela gravação antes de navegar. Disparar e sair de imediato
+    // cancelava o pedido a meio: o cookie ficava — é do lado do cliente — por
+    // isso a aplicação passava a pt-BR, mas o mercado gravado no perfil
+    // continuava PT e o pagamento saía em euros. A pessoa escolhia Brasil e
+    // era cobrada em euros, sem nada na interface que explicasse porquê.
+    try {
+      await updatePreferencesAction(data);
+    } finally {
+      window.location.href = route(next, "account");
+    }
   }
 
   return (
@@ -113,7 +122,7 @@ export function AccountSettings({
                 <button
                   key={option}
                   type="button"
-                  onClick={() => changeLocale(option)}
+                  onClick={() => void changeLocale(option)}
                   className={cn(
                     "flex flex-1 items-center gap-2.5 rounded-md border px-4 py-3 text-left transition-colors",
                     active
