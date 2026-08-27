@@ -16,6 +16,7 @@ import {
   type ActionResult,
 } from "@/lib/auth/actions";
 import type { Dict } from "@/lib/i18n/types";
+import { limparCachePrivada } from "@/lib/workout/cache-privada";
 import type { ExperienceLevel, Profile, TrainingGoal } from "@/lib/supabase/types";
 import { useState } from "react";
 
@@ -208,7 +209,7 @@ export function ProfileForm({
       </form>
 
       <ListGroup>
-        <form action={signOutAction}>
+        <form action={signOutAction} onSubmit={limparCachePrivada}>
           <input type="hidden" name="locale" value={locale} />
           <button
             type="submit"

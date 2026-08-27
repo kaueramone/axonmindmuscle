@@ -117,9 +117,12 @@ export function ReadinessPanel({
 
   async function submeter() {
     setBusy(true);
-    const calculado = computeReadiness(answers, context);
-    await saveReadinessAction({ answers, result: calculado });
-    setResult(calculado);
+    // O servidor recalcula e devolve o que ficou gravado. Mostramos isso e
+    // nao a conta feita aqui: se as duas divergirem, a pessoa tem de ver a
+    // que fica no historico. O calculo local serve so de rede de seguranca
+    // quando a gravacao falha.
+    const gravado = await saveReadinessAction({ answers });
+    setResult(gravado ?? computeReadiness(answers, context));
     setBusy(false);
   }
 

@@ -71,10 +71,20 @@ async function navegar(request, url) {
   try {
     const resposta = await comPrazo(request);
 
+    // Um redirecionamento a partir de uma página da aplicação só acontece por
+    // uma razão: o servidor deixou de reconhecer a sessão. Sessão expirada,
+    // saída noutro dispositivo, palavra-passe trocada — em qualquer dos casos
+    // as páginas guardadas deixaram de ser desta pessoa e vão fora já. É o
+    // sinal mais fiável que o service worker tem, e não custa um pedido.
+    if (guardavel && resposta.redirected) {
+      await caches.delete(PRIVADO);
+      return resposta;
+    }
+
     // Só se guarda o que veio inteiro e é mesmo a página. Um redirecionamento
     // para o login guardado como se fosse o treino deixava a pessoa presa a
     // um ecrã de entrada que nunca mais saía do cache.
-    if (guardavel && resposta.ok && !resposta.redirected) {
+    if (guardavel && resposta.ok) {
       const copia = resposta.clone();
       caches.open(PRIVADO).then((c) => c.put(url.pathname, copia));
     }

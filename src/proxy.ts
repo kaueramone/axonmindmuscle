@@ -2,13 +2,38 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { isLocale, negotiateLocale } from "@/lib/i18n/config";
 import { authSegments, protectedSegments, segments } from "@/lib/routes";
+import { construirCsp, gerarNonce } from "@/lib/security/csp";
 import { updateSession } from "@/lib/supabase/middleware";
 
 const LOCALE_COOKIE = "axon-locale";
 const ONE_YEAR = 60 * 60 * 24 * 365;
+const PRODUCAO = process.env.NODE_ENV === "production";
+
+/**
+ * Opções do cookie de idioma. `secure` em produção porque um cookie sem ele
+ * viaja em claro à primeira ligação HTTP e ensina a um intermediário que
+ * cookies este sítio usa.
+ */
+const COOKIE_IDIOMA = {
+  maxAge: ONE_YEAR,
+  path: "/",
+  sameSite: "lax" as const,
+  secure: PRODUCAO,
+};
 
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
+
+  // Um número irrepetível por pedido. Vai no cabeçalho do pedido para o Next
+  // o carimbar nos seus scripts, e no da resposta para o browser o exigir.
+  const nonce = gerarNonce();
+  const csp = construirCsp(nonce, PRODUCAO);
+
+  /** Toda a resposta que sai daqui leva a política — redirecionamentos incluídos. */
+  const comCsp = <T extends NextResponse>(resposta: T): T => {
+    resposta.headers.set("content-security-policy", csp);
+    return resposta;
+  };
 
   // ---- 1. Garantir prefixo de idioma no caminho ----
   const firstSegment = pathname.split("/")[1];
@@ -25,12 +50,8 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = `/${locale}${pathname === "/" ? "" : pathname}`;
     const redirect = NextResponse.redirect(url);
-    redirect.cookies.set(LOCALE_COOKIE, locale, {
-      maxAge: ONE_YEAR,
-      path: "/",
-      sameSite: "lax",
-    });
-    return redirect;
+    redirect.cookies.set(LOCALE_COOKIE, locale, COOKIE_IDIOMA);
+    return comCsp(redirect);
   }
 
   const locale = firstSegment;
@@ -50,12 +71,11 @@ export async function proxy(request: NextRequest) {
     !authSegments.includes(routeSegment);
 
   // ---- 2. Renovar a sessão do Supabase ----
-  const { response, user } = await updateSession(request);
-  response.cookies.set(LOCALE_COOKIE, locale, {
-    maxAge: ONE_YEAR,
-    path: "/",
-    sameSite: "lax",
+  const { response, user } = await updateSession(request, {
+    "x-nonce": nonce,
+    "content-security-policy": csp,
   });
+  response.cookies.set(LOCALE_COOKIE, locale, COOKIE_IDIOMA);
 
   // ---- 3. Guardas de acesso ----
   const isProtected = protectedSegments.includes(routeSegment);
@@ -68,7 +88,7 @@ export async function proxy(request: NextRequest) {
     url.searchParams.set("redirect", pathname + search);
     const redirect = NextResponse.redirect(url);
     response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
-    return redirect;
+    return comCsp(redirect);
   }
 
   if (isAuthRoute && user) {
@@ -77,7 +97,7 @@ export async function proxy(request: NextRequest) {
     url.search = "";
     const redirect = NextResponse.redirect(url);
     response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
-    return redirect;
+    return comCsp(redirect);
   }
 
   if (forcarPainel) {
@@ -86,10 +106,10 @@ export async function proxy(request: NextRequest) {
     url.search = "";
     const redirect = NextResponse.redirect(url);
     response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
-    return redirect;
+    return comCsp(redirect);
   }
 
-  return response;
+  return comCsp(response);
 }
 
 export const config = {

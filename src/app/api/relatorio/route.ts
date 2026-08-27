@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { limitarPedidos } from "@/lib/api/rate-limit";
 import { buildReport, type DadosRelatorio } from "@/lib/export/report";
 import { marketByLocale, isLocale, defaultLocale } from "@/lib/i18n/config";
 import { createClient } from "@/lib/supabase/server";
@@ -42,6 +43,11 @@ export async function GET(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "sem sessão" }, { status: 401 });
+
+  // Desenhar um PDF de ate 24 meses nao e barato. Doze por hora dao para
+  // experimentar periodos diferentes a vontade e travam um ciclo automatico.
+  const limite = await limitarPedidos(supabase, "relatorio");
+  if (limite) return limite;
 
   const { data: perfil } = await supabase
     .from("profiles")

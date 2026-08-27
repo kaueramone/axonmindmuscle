@@ -341,7 +341,7 @@ export function WorkoutRunner({
 
   const finish = useCallback(async () => {
     setBusy(true);
-    if (sessionId) await endSession(sessionId);
+    if (sessionId) await endSession(sessionId, userId);
     setBusy(false);
     // O esforço percebido da sessão é o que, multiplicado pelos minutos, dá a
     // carga — e é a única unidade que soma musculação e cardio. Perguntamo-lo
@@ -352,7 +352,7 @@ export function WorkoutRunner({
   const saveEffort = useCallback(
     async (valor: number | null) => {
       setBusy(true);
-      if (valor != null && sessionId) await setSessionRpe(sessionId, valor);
+      if (valor != null && sessionId) await setSessionRpe(sessionId, userId, valor);
       setSessionRpe_local(valor);
       setBusy(false);
       setStep("summary");

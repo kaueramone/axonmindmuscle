@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { limitarPedidos } from "@/lib/api/rate-limit";
 import { toCsv } from "@/lib/export/csv";
 import { makeZip, type ZipEntry } from "@/lib/export/zip";
 import { createClient } from "@/lib/supabase/server";
@@ -28,13 +29,19 @@ async function todasAsLinhas(
   supabase: Cliente,
   tabela: "workout_sessions" | "workout_sets" | "readiness_checkins" | "subscriptions",
   ordem: string,
+  dono: string,
 ): Promise<Record<string, unknown>[]> {
   const tudo: Record<string, unknown>[] = [];
 
   for (let inicio = 0; ; inicio += PAGINA) {
+    // O `user_id` esta aqui de proposito, apesar de o RLS ja o garantir. Esta
+    // rota devolve um ficheiro com tudo o que a pessoa tem: se uma politica
+    // for reescrita amanha e ficar mais larga do que devia, e aqui que a
+    // exportacao continua a sair certa em vez de passar a incluir estranhos.
     const { data, error } = await supabase
       .from(tabela)
       .select("*")
+      .eq("user_id", dono)
       .order(ordem, { ascending: true })
       .range(inicio, inicio + PAGINA - 1);
 
@@ -80,6 +87,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "sem sessão" }, { status: 401 });
   }
 
+  // Esta rota varre as tabelas todas da pessoa e comprime o resultado. Seis por
+  // hora chegam de sobra para quem quer os seus dados; um ciclo automatico
+  // bate no teto ao setimo pedido em vez de correr sem fim.
+  const limite = await limitarPedidos(supabase, "exportar");
+  if (limite) return limite;
+
   const formato = request.nextUrl.searchParams.get("formato") === "json" ? "json" : "csv";
   const agora = new Date();
   const carimbo = agora.toISOString().slice(0, 10);
@@ -88,10 +101,10 @@ export async function GET(request: NextRequest) {
     const [{ data: perfil }, sessoes, series, prontidao, subscricoes] =
       await Promise.all([
         supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
-        todasAsLinhas(supabase, "workout_sessions", "started_at"),
-        todasAsLinhas(supabase, "workout_sets", "completed_at"),
-        todasAsLinhas(supabase, "readiness_checkins", "local_date"),
-        todasAsLinhas(supabase, "subscriptions", "created_at"),
+        todasAsLinhas(supabase, "workout_sessions", "started_at", user.id),
+        todasAsLinhas(supabase, "workout_sets", "completed_at", user.id),
+        todasAsLinhas(supabase, "readiness_checkins", "local_date", user.id),
+        todasAsLinhas(supabase, "subscriptions", "created_at", user.id),
       ]);
 
     const perfilLinhas = perfil ? [perfil as Record<string, unknown>] : [];

@@ -17,6 +17,7 @@ import {
 import { Segmented } from "@/components/ui/segmented";
 import { Badge, ListGroup, ListRow } from "@/components/ui/surface";
 import { signOutAction, updatePreferencesAction } from "@/lib/auth/actions";
+import { limparCachePrivada } from "@/lib/workout/cache-privada";
 import { locales, marketByLocale, type Locale } from "@/lib/i18n/config";
 import type { Dict } from "@/lib/i18n/types";
 import { route } from "@/lib/routes";
@@ -197,7 +198,7 @@ export function AccountSettings({
       ) : null}
 
       <ListGroup>
-        <form action={signOutAction}>
+        <form action={signOutAction} onSubmit={limparCachePrivada}>
           <input type="hidden" name="locale" value={locale} />
           <button
             type="submit"

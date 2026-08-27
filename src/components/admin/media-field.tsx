@@ -12,6 +12,21 @@ const VIDEOS = ["video/mp4", "video/webm"];
 const MAX_BYTES = 25 * 1024 * 1024;
 
 /**
+ * A extensao sai do tipo declarado e nunca do nome do ficheiro. O nome vem do
+ * disco de quem carrega e entrava em cru no caminho do balde: um ficheiro
+ * chamado `x.jpg/../../outro` levava a escrita para outro sitio. Aqui, o que
+ * nao esta nesta tabela nao chega sequer a ser enviado.
+ */
+const EXTENSAO: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif",
+  "video/mp4": "mp4",
+  "video/webm": "webm",
+};
+
+/**
  * Envia a figura ou o vídeo do exercício para o balde `exercises`. O caminho
  * é estável por exercício, portanto substituir a media não deixa ficheiros
  * órfãos para trás.
@@ -48,8 +63,12 @@ export function MediaField({
     setBusy(true);
     try {
       const supabase = createClient();
-      const extensao = file.name.split(".").pop()?.toLowerCase() || (ehVideo ? "mp4" : "jpg");
-      const caminho = `${exerciseKey}/media.${extensao}`;
+      const extensao = EXTENSAO[file.type];
+      if (!extensao) throw new Error("tipo não suportado");
+
+      // A chave do exercício também é normalizada: é ela que forma a pasta.
+      const pasta = exerciseKey.replace(/[^a-z0-9-]/gi, "").slice(0, 80) || "sem-nome";
+      const caminho = `${pasta}/media.${extensao}`;
 
       const { error } = await supabase.storage
         .from("exercises")

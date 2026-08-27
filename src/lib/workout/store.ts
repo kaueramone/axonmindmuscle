@@ -31,6 +31,12 @@ type PendingSession = {
   routine_id: string | null;
 };
 
+/**
+ * Todas as escritas levam o dono a par do identificador da linha. O RLS ja
+ * recusaria uma sessao alheia — foi testado — mas uma condicao que so diz
+ * `id = x` depende inteiramente de a politica estar la e continuar como esta.
+ * Com o dono na condicao, a consulta esta certa por si.
+ */
 const SETS_KEY = "axon-series-pendentes";
 const SESSIONS_KEY = "axon-sessoes-pendentes";
 
@@ -169,21 +175,35 @@ export async function logSet(
  * Esforço percebido da sessão. É melhor esforço: se falhar, perde-se o número
  * e não a sessão — não vale a pena pôr isto na fila de escoamento.
  */
-export async function setSessionRpe(sessionId: string, rpe: number): Promise<void> {
+export async function setSessionRpe(
+  sessionId: string,
+  userId: string,
+  rpe: number,
+): Promise<void> {
+  // A escala vai de 1 a 10 e alimenta o esforco medio do relatorio. Um numero
+  // fora disto nao e uma opiniao invulgar sobre o treino, e um pedido forjado.
+  const valor = Math.round(rpe);
+  if (!Number.isFinite(valor) || valor < 1 || valor > 10) return;
+
   const supabase = createClient();
   await comLimite(
-    supabase.from("workout_sessions").update({ rpe }).eq("id", sessionId),
+    supabase
+      .from("workout_sessions")
+      .update({ rpe: valor })
+      .eq("id", sessionId)
+      .eq("user_id", userId),
   );
 }
 
-export async function endSession(sessionId: string): Promise<void> {
+export async function endSession(sessionId: string, userId: string): Promise<void> {
   await flushQueue();
   const supabase = createClient();
   await comLimite(
     supabase
       .from("workout_sessions")
       .update({ ended_at: new Date().toISOString() })
-      .eq("id", sessionId),
+      .eq("id", sessionId)
+      .eq("user_id", userId),
   );
 }
 

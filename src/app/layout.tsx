@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import { Geist_Mono, Jura, Outfit } from "next/font/google";
 
 import { ServiceWorker } from "@/components/service-worker";
@@ -62,9 +63,14 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // O `nonce` é criado no proxy, um por pedido. Sem ele, o script que aplica
+  // o tema antes da hidratação seria recusado pela política de conteúdo e a
+  // página abria com as cores erradas durante um instante.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+
   return (
     <html
       lang="pt"
@@ -72,7 +78,7 @@ export default function RootLayout({
       className={`${outfit.variable} ${jura.variable} ${geistMono.variable}`}
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-dvh antialiased">
         <ThemeProvider>{children}</ThemeProvider>

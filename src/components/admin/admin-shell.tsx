@@ -8,6 +8,7 @@ import { LogoAxon } from "@/components/brand/logo";
 import { ThemeToggle } from "@/components/app/theme-toggle";
 import { Chart, Bolt, SignOut, Users } from "@/components/ui/icons";
 import { signOutAction } from "@/lib/auth/actions";
+import { limparCachePrivada } from "@/lib/workout/cache-privada";
 import type { Locale } from "@/lib/i18n/config";
 import { cn } from "@/lib/utils";
 
@@ -66,7 +67,7 @@ export function AdminShell({
 
           {/* O painel tem sessão própria neste subdomínio, por isso precisa
               do seu próprio botão de saída. */}
-          <form action={signOutAction} className="shrink-0">
+          <form action={signOutAction} onSubmit={limparCachePrivada} className="shrink-0">
             <input type="hidden" name="locale" value={locale} />
             <button
               type="submit"

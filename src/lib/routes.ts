@@ -40,9 +40,39 @@ export function route(locale: Locale, key: RouteKey): string {
  */
 export function safeNext(value: string | null | undefined): string | null {
   if (!value) return null;
-  if (!value.startsWith("/") || value.startsWith("//")) return null;
-  return value;
+
+  // Espacos e caracteres de controlo sao removidos pelo analisador de URL do
+  // browser antes de ele decidir para onde vai. Um `/\t/evil.com` passa por
+  // uma verificacao de prefixo ingenua e chega ao browser como `//evil.com`.
+  const limpo = value.replace(/[\u0000-\u001F\u007F\s]/g, "");
+
+  if (!limpo.startsWith("/")) return null;
+
+  // As duas formas de escrever a mesma coisa. O analisador de URL da norma
+  // WHATWG trata `\` como `/` nos esquemas http e https, por isso
+  // `/\evil.com` resolve para `https://evil.com` tal como `//evil.com`.
+  // Recusamos a barra invertida em qualquer posicao: nenhum caminho legitimo
+  // deste produto a usa.
+  if (limpo.startsWith("//") || limpo.includes("\\")) return null;
+
+  // Cinto e suspensorios: resolvemos contra uma origem descartavel e so
+  // aceitamos o que nao saiu de la. O que devolvemos e a forma ja normalizada,
+  // e nao o texto que veio de fora.
+  try {
+    const resolvido = new URL(limpo, ORIGEM_DE_TESTE);
+    if (resolvido.origin !== ORIGEM_DE_TESTE) return null;
+    return `${resolvido.pathname}${resolvido.search}${resolvido.hash}`;
+  } catch {
+    return null;
+  }
 }
+
+/**
+ * Origem inexistente usada apenas para resolver caminhos relativos. O dominio
+ * `.invalid` esta reservado pela norma para nunca resolver, portanto um erro
+ * de logica aqui falha fechado em vez de apontar para um sitio real.
+ */
+const ORIGEM_DE_TESTE = "https://axon.invalid";
 
 /** Rotas que exigem sessão iniciada. */
 export const protectedSegments: string[] = [

@@ -226,6 +226,24 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["readiness_checkins"]["Insert"]>;
         Relationships: [];
       };
+      rate_limits: {
+        Row: {
+          bucket: string;
+          contador: number;
+          janela_inicio: string;
+        };
+        Insert: {
+          bucket: string;
+          contador?: number;
+          janela_inicio?: string;
+        };
+        Update: {
+          bucket?: string;
+          contador?: number;
+          janela_inicio?: string;
+        };
+        Relationships: [];
+      };
       leads: {
         Row: {
           created_at: string;
@@ -404,6 +422,13 @@ export type Database = {
     };
     Functions: {
       is_admin: { Args: Record<string, never>; Returns: boolean };
+      consume_rate_limit: {
+        Args: { p_acao: string };
+        Returns: {
+          permitido: boolean;
+          repetir_em: number;
+        }[];
+      };
       admin_overview: {
         Args: Record<string, never>;
         Returns: {

@@ -153,10 +153,11 @@ export async function signInAction(
 
   if (error) return { ok: false, error: mapAuthError(error.message, error.status) };
 
-  const destination =
-    redirectTo.startsWith("/") && !redirectTo.startsWith("//")
-      ? redirectTo
-      : route(locale, "today");
+  // Mesma porta que o resto do produto. A verificacao de prefixo que estava
+  // aqui deixava passar `/\\sitio-falso`, que o browser le como `//sitio-falso`:
+  // quem clicasse num link de login preparado acabava no sitio do atacante
+  // logo a seguir a autenticar-se, ja com a sessao aberta.
+  const destination = safeNext(redirectTo) ?? route(locale, "today");
 
   revalidatePath("/", "layout");
   redirect(destination);

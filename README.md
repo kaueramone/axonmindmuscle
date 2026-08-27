@@ -286,6 +286,52 @@ imagem ou vídeo, escrever a orientação nos dois idiomas) e gestão de papéis
 O painel está escrito em pt-PT fixo, sem passar pelo dicionário: é uma
 retaguarda para o cliente, não uma superfície do produto.
 
+## Segurança
+
+Auditoria completa em 27 de Agosto de 2026. O que ficou montado, e porquê.
+
+**A base de dados é a linha de fundo, não a de cima.** Todas as tabelas têm
+RLS e as políticas foram testadas por impersonação, não por leitura. Um
+membro autenticado não consegue promover-se a `admin`, dar-se `plan = 'pro'`,
+apontar o perfil para o `stripe_customer_id` de outra pessoa, ler ou escrever
+dados alheios, nem chamar as funções do painel. As colunas sensíveis de
+`profiles` são defendidas por dois gatilhos — `guard_profile_role` no UPDATE e
+`guard_profile_insert` no INSERT — e não apenas pela política de linha.
+
+**`safeNext()` é a única porta para destinos vindos de fora.** Query string,
+campo de formulário, link de email: passam todos por lá. Bloqueia `//sitio`,
+`/\sitio` (que o analisador de URL lê como `//sitio`), espaços e caracteres
+de controlo, e devolve o caminho já normalizado em vez do texto recebido.
+Qualquer código novo que redireccione para onde o utilizador pediu tem de a
+usar — não repetir a verificação à mão.
+
+**Limite de pedidos.** `/api/exportar` e `/api/relatorio` varrem tabelas e
+geram ficheiros; passam por `consume_rate_limit()`, que vive em Postgres
+porque um contador em memória não sobrevive a duas instâncias na Vercel. Os
+tetos estão escritos dentro da função e o balde é derivado de `auth.uid()`:
+quem chamar o RPC directamente não escolhe o seu próprio limite nem gasta a
+quota de outra pessoa.
+
+**Política de conteúdo.** `nonce` por pedido, gerado no proxy, com
+`strict-dynamic`. O `nonce` viaja no cabeçalho do pedido para o Next o
+carimbar nos seus scripts, e no da resposta para o browser o exigir. Ao
+acrescentar um serviço externo, é em `src/lib/security/csp.ts` que se abre a
+porta — e abre-se a directiva certa, não `default-src`.
+
+**Cache do service worker.** As páginas `/hoje` e `/treino` são guardadas com
+o nome e as cargas dentro do HTML. Essa cache é apagada ao sair da conta
+(`limparCachePrivada`), ao entrar no ecrã de login, e sempre que o servidor
+responde a uma página da aplicação com um redireccionamento — o sinal de que
+a sessão deixou de existir.
+
+**Migrações** em `supabase/migrations/`. A partir daqui, alteração de esquema
+ou de política escreve-se aí antes de ir para a base.
+
+**Por fazer:** ligar a protecção contra palavras-passe comprometidas
+(Supabase → Authentication → Attack Protection) e pôr a chave do Turnstile em
+produção (ver a secção Cloudflare) — sem ela o CAPTCHA não aparece e o
+registo e o login ficam apenas com os limites do Supabase Auth.
+
 ## Conteúdo dos exercícios
 
 `exercises` ganhou `media_url`, `media_type` (`image` | `video`), `created_by` e
