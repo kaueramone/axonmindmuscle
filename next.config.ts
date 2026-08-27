@@ -34,6 +34,17 @@ const nextConfig: NextConfig = {
         source: "/(.*)",
         headers: [
           { key: "X-Content-Type-Options", value: "nosniff" },
+          {
+            // A Vercel ja envia HSTS no dominio proprio, mas sem
+            // `includeSubDomains` nem `preload`. Sem o primeiro, uma primeira
+            // visita a `painel.` por http fica ao alcance de quem estiver no
+            // meio do caminho — e o painel e onde estao os utilizadores todos.
+            // O `preload` e a candidatura a lista embutida nos browsers: a
+            // diretiva sozinha nao inscreve nada, e submissao faz-se em
+            // hstspreload.org, mas tem de constar para ser aceite.
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
           {
