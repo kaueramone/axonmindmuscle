@@ -71,9 +71,13 @@ export async function startCheckoutAction(formData: FormData): Promise<void> {
     redirect(`${route(locale, "plans")}?erro=cupao-usado`);
   }
 
-  let destino: string | null = null;
-  try {
-    const sessao = await stripe().checkout.sessions.create({
+  // O mandato do Pix é a parte frágil deste pedido: em modo `subscription` o
+  // Stripe aceita menos campos do que a página do mandato documenta, e a lista
+  // já mudou uma vez. Por isso o pedido é uma função — se o mandato completo
+  // for recusado, repete-se com o par mínimo que a documentação do checkout
+  // garante, em vez de deixar o brasileiro sem forma de pagar.
+  const criarSessao = (mandato: MandatoPix | null) =>
+    stripe().checkout.sessions.create({
       mode: "subscription",
       line_items: [{ price, quantity: 1 }],
 
@@ -98,7 +102,9 @@ export async function startCheckoutAction(formData: FormData): Promise<void> {
       ...(aplicarFundadores
         ? { discounts: [{ coupon: cupao }] }
         : { allow_promotion_codes: true }),
-      ...(pix ? { payment_method_options: { pix: { mandate_options: pix } } } : {}),
+      ...(mandato
+        ? { payment_method_options: { pix: { mandate_options: mandato } } }
+        : {}),
       locale: locale === "pt-br" ? "pt-BR" : "pt",
       billing_address_collection: "auto",
 
@@ -112,11 +118,35 @@ export async function startCheckoutAction(formData: FormData): Promise<void> {
       success_url: `${SITE_URL}${route(locale, "plans")}?estado=sucesso`,
       cancel_url: `${SITE_URL}${route(locale, "plans")}?estado=cancelado`,
     });
-    destino = sessao.url;
+
+  let destino: string | null = null;
+  try {
+    destino = (await criarSessao(pix)).url;
   } catch (erro) {
     // Uma recusa do Stripe não pode virar um 500 em branco: a página de planos
     // já sabe explicar o "erro=checkout" na língua da pessoa.
     console.error("[stripe] checkout recusado:", (erro as Error)?.message);
+
+    if (pix) {
+      try {
+        destino = (
+          await criarSessao({
+            amount: pix.amount,
+            payment_schedule: pix.payment_schedule,
+          })
+        ).url;
+        // Vale a pena dar por isto: sem `amount_includes_iof` o IOF passa a ser
+        // cobrado por cima, e o brasileiro deixa de pagar o valor anunciado.
+        console.warn(
+          "[stripe] mandato Pix reduzido a amount + payment_schedule — o IOF passa para o cliente",
+        );
+      } catch (segundo) {
+        console.error(
+          "[stripe] checkout recusado com o mandato mínimo:",
+          (segundo as Error)?.message,
+        );
+      }
+    }
   }
 
   if (destino) redirect(destino);
@@ -135,16 +165,17 @@ export async function startCheckoutAction(formData: FormData): Promise<void> {
  * aumento de preço mais tarde teria de trazer a pessoa de volta ao banco para
  * reautorizar. A folga é o que evita esse regresso.
  */
+type MandatoPix = {
+  amount: number;
+  amount_includes_iof?: "always";
+  payment_schedule: "monthly" | "yearly";
+  reference?: string;
+};
+
 async function mandatoPix(
   priceId: string,
   interval: BillingInterval,
-): Promise<{
-  amount: number;
-  amount_type: "maximum";
-  amount_includes_iof: "always";
-  payment_schedule: "monthly" | "yearly";
-  reference: string;
-} | null> {
+): Promise<MandatoPix | null> {
   try {
     const preco = await stripe().prices.retrieve(priceId);
     const cheio = preco.unit_amount;
@@ -154,9 +185,10 @@ async function mandatoPix(
     // número redondo em vez de um valor que parece calculado à pressa.
     const comFolga = Math.ceil((cheio * 1.25) / 1000) * 1000;
 
+    // Sem `amount_type`: em modo `subscription` o Stripe recusa o campo, e o
+    // valor que ele assume por omissão é justamente `maximum`.
     return {
       amount: comFolga,
-      amount_type: "maximum",
       // A empresa absorve o IOF: o cliente vê no banco exatamente o valor que
       // a página anuncia, e os 3,5% saem da liquidação.
       amount_includes_iof: "always",
