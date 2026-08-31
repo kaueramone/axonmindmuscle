@@ -71,41 +71,55 @@ export async function startCheckoutAction(formData: FormData): Promise<void> {
     redirect(`${route(locale, "plans")}?erro=cupao-usado`);
   }
 
-  const sessao = await stripe().checkout.sessions.create({
-    mode: "subscription",
-    line_items: [{ price, quantity: 1 }],
+  let destino: string | null = null;
+  try {
+    const sessao = await stripe().checkout.sessions.create({
+      mode: "subscription",
+      line_items: [{ price, quantity: 1 }],
 
-    // Reaproveitar o cliente evita registos duplicados no Stripe e mantém o
-    // histórico de faturação da pessoa num só sítio.
-    ...(perfil?.stripe_customer_id
-      ? { customer: perfil.stripe_customer_id }
-      : { customer_email: user.email ?? undefined }),
+      // Reaproveitar o cliente evita registos duplicados no Stripe e mantém o
+      // histórico de faturação da pessoa num só sítio.
+      ...(perfil?.stripe_customer_id
+        ? { customer: perfil.stripe_customer_id }
+        : { customer_email: user.email ?? undefined }),
 
-    client_reference_id: user.id,
-    // Os metadados chegam ao webhook nos dois objetos — sessão e subscrição.
-    metadata: { user_id: user.id },
-    subscription_data: {
-      metadata: {
-        user_id: user.id,
-        ...(aplicarFundadores ? { founders_code: FOUNDERS_CODE } : {}),
+      client_reference_id: user.id,
+      // Os metadados chegam ao webhook nos dois objetos — sessão e subscrição.
+      metadata: { user_id: user.id },
+      subscription_data: {
+        metadata: {
+          user_id: user.id,
+          ...(aplicarFundadores ? { founders_code: FOUNDERS_CODE } : {}),
+        },
       },
-    },
 
-    // Os dois são mutuamente exclusivos no Stripe: ou aplicamos o desconto
-    // nós, ou deixamos a caixa de código do checkout tratar disso.
-    ...(aplicarFundadores
-      ? { discounts: [{ coupon: cupao }] }
-      : { allow_promotion_codes: true }),
-    ...(pix ? { payment_method_options: { pix: { mandate_options: pix } } } : {}),
-    locale: locale === "pt-br" ? "pt-BR" : "pt",
-    billing_address_collection: "auto",
-    automatic_tax: { enabled: false },
+      // Os dois são mutuamente exclusivos no Stripe: ou aplicamos o desconto
+      // nós, ou deixamos a caixa de código do checkout tratar disso.
+      ...(aplicarFundadores
+        ? { discounts: [{ coupon: cupao }] }
+        : { allow_promotion_codes: true }),
+      ...(pix ? { payment_method_options: { pix: { mandate_options: pix } } } : {}),
+      locale: locale === "pt-br" ? "pt-BR" : "pt",
+      billing_address_collection: "auto",
 
-    success_url: `${SITE_URL}${route(locale, "plans")}?estado=sucesso`,
-    cancel_url: `${SITE_URL}${route(locale, "plans")}?estado=cancelado`,
-  });
+      // O Stripe passou a ligar Managed Payments (ser ele o merchant of record)
+      // por omissão na conta. Nesse modo recusa `automatic_tax` e, pior,
+      // `payment_method_options` — que é onde vive o mandato do Pix Automático.
+      // Enquanto o Brasil for por Pix, quem vende é a AXON.
+      managed_payments: { enabled: false },
+      automatic_tax: { enabled: false },
 
-  if (sessao.url) redirect(sessao.url);
+      success_url: `${SITE_URL}${route(locale, "plans")}?estado=sucesso`,
+      cancel_url: `${SITE_URL}${route(locale, "plans")}?estado=cancelado`,
+    });
+    destino = sessao.url;
+  } catch (erro) {
+    // Uma recusa do Stripe não pode virar um 500 em branco: a página de planos
+    // já sabe explicar o "erro=checkout" na língua da pessoa.
+    console.error("[stripe] checkout recusado:", (erro as Error)?.message);
+  }
+
+  if (destino) redirect(destino);
   redirect(`${route(locale, "plans")}?erro=checkout`);
 }
 
