@@ -1,12 +1,21 @@
-import { assertLocale } from "@/lib/i18n/config";
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
 import { AppHeader } from "@/components/app/app-header";
-import { Badge, Card } from "@/components/ui/surface";
+import { CommunityFeed } from "@/components/app/community-feed";
+import { PostComposer } from "@/components/app/post-composer";
+import { Card } from "@/components/ui/surface";
+import { lerFeed, lerOnline } from "@/lib/community/feed";
 import { getDictionary } from "@/lib/i18n";
-import type { Locale } from "@/lib/i18n/config";
+import { assertLocale, marketByLocale } from "@/lib/i18n/config";
+import { route } from "@/lib/routes";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Comunidade", robots: { index: false } };
+
+// O mural muda a cada minuto e a página é diferente para cada pessoa - já
+// traz o que cada uma apoiou. Não há nada aqui que valha a pena guardar.
+export const dynamic = "force-dynamic";
 
 export default async function CommunityPage({
   params,
@@ -17,6 +26,22 @@ export default async function CommunityPage({
   const locale = assertLocale(rawLocale);
   const dict = await getDictionary(locale);
   const copy = dict.app.community;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect(route(locale, "signIn"));
+
+  // A visita é o que marca presença. Alimenta o "online agora" de toda a gente
+  // sem uma única ligação permanente aberta.
+  await supabase.rpc("tocar_presenca");
+
+  const [posts, online, { data: podePublicar }] = await Promise.all([
+    lerFeed(supabase, user.id),
+    lerOnline(supabase),
+    supabase.rpc("pode_publicar"),
+  ]);
 
   return (
     <>
@@ -32,10 +57,33 @@ export default async function CommunityPage({
       />
 
       <div className="mx-auto flex max-w-2xl flex-col gap-6 px-5 pt-6">
-        <Card className="flex items-start justify-between gap-4">
-          <p className="text-callout text-fg-muted">{copy.empty}</p>
-          <Badge tone="accent">{dict.common.inDevelopment}</Badge>
-        </Card>
+        {online > 0 ? (
+          <p className="flex items-center gap-2 text-caption text-fg-subtle">
+            <span className="size-1.5 rounded-full bg-success" aria-hidden />
+            <span className="data-mono">{online}</span> {copy.online}
+          </p>
+        ) : null}
+
+        <PostComposer
+          copy={copy}
+          locale={locale}
+          podePublicar={podePublicar === true}
+        />
+
+        {posts.length === 0 ? (
+          <Card>
+            <p className="text-callout text-fg-muted">
+              {podePublicar ? copy.emptyPro : copy.empty}
+            </p>
+          </Card>
+        ) : (
+          <CommunityFeed
+            posts={posts}
+            copy={copy}
+            intlLocale={marketByLocale[locale].intl}
+            agoraISO={new Date().toISOString()}
+          />
+        )}
       </div>
     </>
   );

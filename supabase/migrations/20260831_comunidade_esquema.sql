@@ -738,3 +738,115 @@ revoke all on function public.comunidade_online() from public, anon;
 grant execute on function public.pode_publicar() to authenticated;
 grant execute on function public.tocar_presenca() to authenticated;
 grant execute on function public.comunidade_online() to authenticated;
+
+
+-- 12. A guarda estava a comer os contadores ----------------------------------
+-- Apanhado a testar, antes de sair daqui: `guard_post_columns` corria tambem
+-- BEFORE UPDATE e repunha like_count ao valor anterior para quem nao e admin.
+-- So que quem faz esse UPDATE e o proprio gatilho dos contadores, e nessa
+-- altura auth.uid() ainda e o utilizador - `security definer` troca o dono da
+-- funcao, nao a sessao. Cada gosto era contado e imediatamente descontado.
+-- Todos os numeros do mural nasciam a zero, sem erro nenhum a dizer porque.
+--
+-- A licao: uma guarda por gatilho nao distingue o utilizador do sistema. Nos
+-- posts a defesa passa a ser de privilegio e nao de logica - o papel
+-- authenticated deixa de poder escrever em qualquer coluna a nao ser
+-- deleted_at, e os gatilhos, que correm como dono da tabela, nem a veem.
+
+revoke update on public.posts from authenticated;
+grant update (deleted_at) on public.posts to authenticated;
+
+create or replace function public.guard_post_columns()
+returns trigger language plpgsql security definer set search_path to '' as $$
+declare v_uid uuid := auth.uid();
+begin
+  if v_uid is null or public.is_admin() then return new; end if;
+  new.author_id := v_uid;
+  new.like_count := 0;
+  new.reply_count := 0;
+  new.repost_count := 0;
+  new.is_pinned := false;
+  new.hidden_at := null;
+  new.hidden_by := null;
+  new.deleted_at := null;
+  new.created_at := now();
+  return new;
+end;
+$$;
+revoke all on function public.guard_post_columns() from public, anon, authenticated;
+
+drop trigger if exists guard_post_columns on public.posts;
+create trigger guard_post_columns before insert on public.posts
+  for each row execute function public.guard_post_columns();
+
+-- Apagar e definitivo: sem isto, a unica coluna que o autor pode escrever
+-- servia tambem para ressuscitar um post ja retirado.
+create or replace function public.guard_post_undelete()
+returns trigger language plpgsql security definer set search_path to '' as $$
+begin
+  if auth.uid() is null or public.is_admin() then return new; end if;
+  if old.deleted_at is not null then new.deleted_at := old.deleted_at; end if;
+  return new;
+end;
+$$;
+revoke all on function public.guard_post_undelete() from public, anon, authenticated;
+
+drop trigger if exists guard_post_undelete on public.posts;
+create trigger guard_post_undelete before update on public.posts
+  for each row execute function public.guard_post_undelete();
+
+-- Em profiles a mesma barreira sairia cara: vinte colunas listadas uma a uma
+-- para proteger duas, e a primeira que fosse esquecida deixava de poder ser
+-- gravada pelo ecra do perfil. A guarda fica, mas passa a saber quando o
+-- UPDATE e do proprio sistema, por uma bandeira local a transaccao que o
+-- gatilho apaga logo a seguir ao UPDATE que a acendeu.
+create or replace function public.sync_follow_counts()
+returns trigger language plpgsql security definer set search_path to '' as $$
+begin
+  perform set_config('axon.contadores', 'on', true);
+  if tg_op = 'INSERT' then
+    update public.profiles set follower_count = follower_count + 1 where id = new.following_id;
+    update public.profiles set following_count = following_count + 1 where id = new.follower_id;
+    perform set_config('axon.contadores', 'off', true);
+    insert into public.notifications (user_id, actor_id, tipo)
+    values (new.following_id, new.follower_id, 'seguidor');
+  elsif tg_op = 'DELETE' then
+    update public.profiles set follower_count = greatest(0, follower_count - 1) where id = old.following_id;
+    update public.profiles set following_count = greatest(0, following_count - 1) where id = old.follower_id;
+    perform set_config('axon.contadores', 'off', true);
+  end if;
+  return null;
+end;
+$$;
+revoke all on function public.sync_follow_counts() from public, anon, authenticated;
+
+create or replace function public.guard_profile_social()
+returns trigger language plpgsql security definer set search_path to '' as $$
+begin
+  if coalesce(current_setting('axon.contadores', true), 'off') = 'on' then
+    return new;
+  end if;
+  if auth.uid() is null or public.is_admin() then return new; end if;
+  new.follower_count := old.follower_count;
+  new.following_count := old.following_count;
+  return new;
+end;
+$$;
+revoke all on function public.guard_profile_social() from public, anon, authenticated;
+
+-- Esconder um post deixou de ser possivel por PostgREST, e ainda bem: passa a
+-- ser um pedido com nome, que verifica o papel e deixa rasto de quem decidiu.
+create or replace function public.admin_ocultar_post(p_post uuid, p_esconder boolean)
+returns void language plpgsql security definer set search_path to '' as $$
+begin
+  if not public.is_admin() then
+    raise exception 'sem permissao';
+  end if;
+  update public.posts
+     set hidden_at = case when p_esconder then now() else null end,
+         hidden_by = case when p_esconder then auth.uid() else null end
+   where id = p_post;
+end;
+$$;
+revoke all on function public.admin_ocultar_post(uuid, boolean) from public, anon;
+grant execute on function public.admin_ocultar_post(uuid, boolean) to authenticated;

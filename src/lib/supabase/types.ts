@@ -337,6 +337,10 @@ export type Database = {
           goal: Database["public"]["Enums"]["training_goal"] | null;
           height_cm: number | null;
           id: string;
+          follower_count: number;
+          following_count: number;
+          handle: string | null;
+          last_seen_at: string | null;
           locale: Database["public"]["Enums"]["app_locale"];
           market: Database["public"]["Enums"]["market_code"];
           onboarding_completed_at: string | null;
@@ -361,6 +365,10 @@ export type Database = {
           goal?: Database["public"]["Enums"]["training_goal"] | null;
           height_cm?: number | null;
           id: string;
+          follower_count?: number;
+          following_count?: number;
+          handle?: string | null;
+          last_seen_at?: string | null;
           locale?: Database["public"]["Enums"]["app_locale"];
           market?: Database["public"]["Enums"]["market_code"];
           onboarding_completed_at?: string | null;
@@ -382,6 +390,10 @@ export type Database = {
           goal?: Database["public"]["Enums"]["training_goal"] | null;
           height_cm?: number | null;
           id?: string;
+          follower_count?: number;
+          following_count?: number;
+          handle?: string | null;
+          last_seen_at?: string | null;
           locale?: Database["public"]["Enums"]["app_locale"];
           market?: Database["public"]["Enums"]["market_code"];
           onboarding_completed_at?: string | null;
@@ -394,6 +406,108 @@ export type Database = {
           weekly_frequency?: number | null;
           weight_kg?: number | null;
         };
+        Relationships: [];
+      };
+      posts: {
+        Row: {
+          author_id: string;
+          body: string;
+          created_at: string;
+          deleted_at: string | null;
+          hidden_at: string | null;
+          hidden_by: string | null;
+          id: string;
+          is_pinned: boolean;
+          like_count: number;
+          reply_count: number;
+          reply_to: string | null;
+          repost_count: number;
+          repost_of: string | null;
+          root_id: string | null;
+          workout_session_id: string | null;
+        };
+        Insert: {
+          author_id: string;
+          body?: string;
+          created_at?: string;
+          deleted_at?: string | null;
+          hidden_at?: string | null;
+          hidden_by?: string | null;
+          id?: string;
+          is_pinned?: boolean;
+          like_count?: number;
+          reply_count?: number;
+          reply_to?: string | null;
+          repost_count?: number;
+          repost_of?: string | null;
+          root_id?: string | null;
+          workout_session_id?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["posts"]["Insert"]>;
+        Relationships: [];
+      };
+      post_likes: {
+        Row: { created_at: string; post_id: string; user_id: string };
+        Insert: { created_at?: string; post_id: string; user_id: string };
+        Update: Partial<Database["public"]["Tables"]["post_likes"]["Insert"]>;
+        Relationships: [];
+      };
+      follows: {
+        Row: { created_at: string; follower_id: string; following_id: string };
+        Insert: { created_at?: string; follower_id: string; following_id: string };
+        Update: Partial<Database["public"]["Tables"]["follows"]["Insert"]>;
+        Relationships: [];
+      };
+      post_mentions: {
+        Row: { post_id: string; user_id: string };
+        Insert: { post_id: string; user_id: string };
+        Update: Partial<Database["public"]["Tables"]["post_mentions"]["Insert"]>;
+        Relationships: [];
+      };
+      notifications: {
+        Row: {
+          actor_id: string | null;
+          created_at: string;
+          id: string;
+          post_id: string | null;
+          read_at: string | null;
+          tipo: Database["public"]["Enums"]["notification_kind"];
+          user_id: string;
+        };
+        Insert: {
+          actor_id?: string | null;
+          created_at?: string;
+          id?: string;
+          post_id?: string | null;
+          read_at?: string | null;
+          tipo: Database["public"]["Enums"]["notification_kind"];
+          user_id: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["notifications"]["Insert"]>;
+        Relationships: [];
+      };
+      post_reports: {
+        Row: {
+          created_at: string;
+          id: string;
+          motivo: Database["public"]["Enums"]["report_reason"];
+          nota: string | null;
+          post_id: string;
+          reporter_id: string;
+          resolved_at: string | null;
+          resolved_by: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          motivo: Database["public"]["Enums"]["report_reason"];
+          nota?: string | null;
+          post_id: string;
+          reporter_id: string;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["post_reports"]["Insert"]>;
         Relationships: [];
       };
     };
@@ -422,6 +536,9 @@ export type Database = {
     };
     Functions: {
       is_admin: { Args: Record<string, never>; Returns: boolean };
+      pode_publicar: { Args: Record<string, never>; Returns: boolean };
+      tocar_presenca: { Args: Record<string, never>; Returns: undefined };
+      comunidade_online: { Args: Record<string, never>; Returns: number };
       consume_rate_limit: {
         Args: { p_acao: string };
         Returns: {
@@ -602,6 +719,13 @@ export type Database = {
     };
     Enums: {
       app_locale: "pt-pt" | "pt-br";
+      notification_kind:
+        | "gosto"
+        | "resposta"
+        | "mencao"
+        | "republicacao"
+        | "seguidor";
+      report_reason: "spam" | "abuso" | "perigoso" | "outro";
       readiness_state: "strong" | "moderate" | "rest";
       exercise_source: "wger" | "axon";
       exercise_media_type: "image" | "video";
@@ -676,3 +800,11 @@ export type SubscriptionStatus = Enums<"subscription_status">;
 export type Subscription = Tables<"subscriptions">;
 export type WorkoutSession = Tables<"workout_sessions">;
 export type WorkoutSet = Tables<"workout_sets">;
+export type Post = Tables<"posts">;
+export type PostInsert = TablesInsert<"posts">;
+export type PostLike = Tables<"post_likes">;
+export type Follow = Tables<"follows">;
+export type Notification = Tables<"notifications">;
+export type NotificationKind = Enums<"notification_kind">;
+export type PostReport = Tables<"post_reports">;
+export type ReportReason = Enums<"report_reason">;
