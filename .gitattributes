@@ -1,0 +1,6 @@
+# O repositorio guarda tudo com LF.
+#
+# Sem isto, um editor no Windows reescreve um ficheiro inteiro em CRLF e o
+# diff seguinte mostra as 2000 linhas mudadas quando so mudou uma. Aconteceu
+# em 23 ficheiros e escondeu alteracoes reais no meio do ruido.
+* text=auto eol=lf
