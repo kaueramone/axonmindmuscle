@@ -419,6 +419,12 @@ export type Database = {
           id: string;
           is_pinned: boolean;
           like_count: number;
+          media_duration_s: number | null;
+          media_height: number | null;
+          media_kind: string | null;
+          media_path: string | null;
+          media_preview_path: string | null;
+          media_width: number | null;
           reply_count: number;
           reply_to: string | null;
           repost_count: number;
@@ -436,6 +442,12 @@ export type Database = {
           id?: string;
           is_pinned?: boolean;
           like_count?: number;
+          media_duration_s?: number | null;
+          media_height?: number | null;
+          media_kind?: string | null;
+          media_path?: string | null;
+          media_preview_path?: string | null;
+          media_width?: number | null;
           reply_count?: number;
           reply_to?: string | null;
           repost_count?: number;

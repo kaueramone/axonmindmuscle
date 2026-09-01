@@ -67,6 +67,7 @@ export default async function CommunityPage({
         <PostComposer
           copy={copy}
           locale={locale}
+          userId={user.id}
           podePublicar={podePublicar === true}
         />
 

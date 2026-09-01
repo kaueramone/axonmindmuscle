@@ -24,7 +24,11 @@ const MOTIVOS_VALIDOS: ReportReason[] = ["spam", "abuso", "perigoso", "outro"];
  */
 export async function publicarAction(formData: FormData): Promise<ComunidadeResult> {
   const corpo = String(formData.get("body") ?? "").trim();
-  if (corpo.length === 0) return { ok: false, error: "vazio" };
+  const media = lerMedia(formData);
+
+  // Uma fotografia sem legenda é uma publicação legítima. Texto vazio só é
+  // erro quando não vem mais nada com ele.
+  if (corpo.length === 0 && !media) return { ok: false, error: "vazio" };
   if (corpo.length > LIMITE_CARACTERES) return { ok: false, error: "longo" };
 
   const supabase = await createClient();
@@ -36,9 +40,27 @@ export async function publicarAction(formData: FormData): Promise<ComunidadeResu
   const limite = await consumir(supabase, "publicar");
   if (limite) return limite;
 
+  // O caminho tem de estar na pasta de quem publica. A política de RLS diz o
+  // mesmo e é ela que manda; isto existe para o erro ser compreensível.
+  if (media && !media.path.startsWith(`${user.id}/`)) {
+    return { ok: false, error: "generico" };
+  }
+
   const { data: post, error } = await supabase
     .from("posts")
-    .insert({ author_id: user.id, body: corpo })
+    .insert({
+      author_id: user.id,
+      body: corpo,
+      ...(media
+        ? {
+            media_kind: media.kind,
+            media_path: media.path,
+            media_preview_path: media.previewPath,
+            media_width: media.largura,
+            media_height: media.altura,
+          }
+        : {}),
+    })
     .select("id")
     .single();
 
@@ -208,4 +230,30 @@ async function guardarMencoes(supabase: Cliente, postId: string, corpo: string) 
 
   // Uma menção falhada não pode levar o post atrás: ele já está publicado.
   if (error) console.error("[comunidade] falha a gravar menções:", error.message);
+}
+
+/**
+ * Lê os campos da fotografia que o compositor já enviou para o Storage.
+ *
+ * O upload acontece no browser e o que chega aqui são só caminhos. Nada disto
+ * é de confiança — daí a verificação da pasta acima e, por baixo dela, a
+ * política de RLS, que é a que não se contorna.
+ */
+function lerMedia(formData: FormData): {
+  kind: "image";
+  path: string;
+  previewPath: string;
+  largura: number;
+  altura: number;
+} | null {
+  const path = String(formData.get("mediaPath") ?? "").trim();
+  const previewPath = String(formData.get("mediaPreviewPath") ?? "").trim();
+  const largura = Number(formData.get("mediaWidth"));
+  const altura = Number(formData.get("mediaHeight"));
+
+  if (!path || !previewPath) return null;
+  if (!Number.isInteger(largura) || !Number.isInteger(altura)) return null;
+  if (largura < 1 || altura < 1) return null;
+
+  return { kind: "image", path, previewPath, largura, altura };
 }

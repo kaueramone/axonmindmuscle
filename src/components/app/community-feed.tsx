@@ -10,7 +10,7 @@ import {
   apagarPostAction,
   denunciarPostAction,
 } from "@/lib/community/actions";
-import type { PostView } from "@/lib/community/shared";
+import type { MediaView, PostView } from "@/lib/community/shared";
 import { t } from "@/lib/i18n/interpolate";
 import type { Dict } from "@/lib/i18n/types";
 import { cn } from "@/lib/utils";
@@ -122,6 +122,8 @@ function PostCard({
             {post.body}
           </p>
 
+          {post.media ? <Media media={post.media} copy={copy} /> : null}
+
           {post.doTreino ? (
             <span className="mt-2 self-start">
               <Badge tone="accent">{copy.fromWorkout}</Badge>
@@ -208,6 +210,43 @@ function PostCard({
         </div>
       ) : null}
     </Card>
+  );
+}
+
+/**
+ * A fotografia do cartão.
+ *
+ * A caixa recebe a proporção real antes de a imagem chegar: sem isso o feed
+ * salta para baixo à medida que cada imagem carrega, e quem estava a ler
+ * perde a linha. As verticais são travadas em 4:5 — uma fotografia de corpo
+ * inteiro ocuparia o ecrã todo e escondia o resto do mural.
+ *
+ * O que aqui se mostra é a variante leve. A grande só é descarregada por quem
+ * toca para a abrir, e é essa diferença que faz o tráfego do mês chegar.
+ */
+function Media({ media, copy }: { media: MediaView; copy: Copy }) {
+  const proporcao = Math.max(0.8, media.largura / Math.max(1, media.altura));
+
+  return (
+    <a
+      href={media.fullUrl}
+      target="_blank"
+      rel="noreferrer"
+      aria-label={copy.imageOpen}
+      className="mt-3 block overflow-hidden rounded-xl border border-hairline"
+      style={{ aspectRatio: proporcao }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={media.url}
+        alt=""
+        width={media.largura}
+        height={media.altura}
+        loading="lazy"
+        decoding="async"
+        className="size-full bg-bg-sunken object-cover"
+      />
+    </a>
   );
 }
 

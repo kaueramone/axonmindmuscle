@@ -4,7 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/lib/supabase/types";
 
-import { PAGINA, type PostView } from "@/lib/community/shared";
+import { BUCKET_MURAL, PAGINA, type MediaView, type PostView } from "@/lib/community/shared";
 
 export * from "@/lib/community/shared";
 
@@ -26,8 +26,11 @@ export async function lerFeed(
 ): Promise<PostView[]> {
   let consulta = supabase
     .from("posts")
+    // Numa unica linha, e nao partida com `+`: o cliente do Supabase deriva os
+    // tipos da string em tempo de compilacao, e uma concatenacao deixa de ser
+    // um literal - tudo o que sai da consulta passa a `unknown`.
     .select(
-      "id, body, created_at, like_count, reply_count, author_id, workout_session_id",
+      "id, body, created_at, like_count, reply_count, author_id, workout_session_id, media_kind, media_path, media_preview_path, media_width, media_height",
     )
     .is("deleted_at", null)
     .is("hidden_at", null)
@@ -58,6 +61,12 @@ export async function lerFeed(
   ]);
 
   const porAutor = new Map((perfis ?? []).map((p) => [p.id, p]));
+
+  // O URL público é construído aqui e não guardado na base de dados: o
+  // domínio do Storage muda se o projeto mudar, e um URL gravado numa linha
+  // sobrevive à mudança a apontar para o sítio errado.
+  const publico = (caminho: string) =>
+    supabase.storage.from(BUCKET_MURAL).getPublicUrl(caminho).data.publicUrl;
   const gostados = new Set((gostos ?? []).map((g) => g.post_id));
 
   return linhas.map((l) => {
@@ -75,6 +84,16 @@ export async function lerFeed(
         handle: p?.handle ?? null,
         avatarUrl: p?.avatar_url ?? null,
       },
+      media:
+        l.media_kind && l.media_path && l.media_preview_path
+          ? ({
+              kind: l.media_kind as MediaView["kind"],
+              url: publico(l.media_preview_path),
+              fullUrl: publico(l.media_path),
+              largura: l.media_width ?? 0,
+              altura: l.media_height ?? 0,
+            } satisfies MediaView)
+          : null,
       gostei: gostados.has(l.id),
       meu: l.author_id === userId,
       doTreino: l.workout_session_id != null,

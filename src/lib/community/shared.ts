@@ -11,6 +11,9 @@ import type { ReportReason } from "@/lib/supabase/types";
  */
 export const LIMITE_CARACTERES = 280;
 
+/** O balde do Storage onde vivem as fotografias do mural. */
+export const BUCKET_MURAL = "mural";
+
 /** Quantos posts por página do feed. */
 export const PAGINA = 30;
 
@@ -22,6 +25,16 @@ export type AutorView = {
   nome: string;
   handle: string | null;
   avatarUrl: string | null;
+};
+
+export type MediaView = {
+  kind: "image" | "video";
+  /** O que o cartão mostra: a variante leve. */
+  url: string;
+  /** O que abre ao toque. */
+  fullUrl: string;
+  largura: number;
+  altura: number;
 };
 
 export type PostView = {
@@ -36,4 +49,5 @@ export type PostView = {
   meu: boolean;
   /** Ligado a um treino: o cartão mostra a proveniência. */
   doTreino: boolean;
+  media: MediaView | null;
 };
