@@ -29,7 +29,7 @@ export default async function AccountPage({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("plan, role, deletion_requested_at")
+    .select("plan, role, deletion_requested_at, readiness_consent_at")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -60,6 +60,7 @@ export default async function AccountPage({
           dict={dict}
           plan={profile?.plan ?? "free"}
           deletionRequestedAt={profile?.deletion_requested_at ?? null}
+          readinessConsentAt={profile?.readiness_consent_at ?? null}
         />
       </div>
     </>

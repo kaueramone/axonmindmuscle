@@ -55,6 +55,76 @@ const dictionary = {
     signOut: "Terminar sessão",
   },
 
+  privacyPolicy: {
+    updated: "Atualizada a 2 de setembro de 2026.",
+    intro:
+      "Esta política explica que dados a AXON Mind-Muscle guarda, para quê, com que base legal e durante quanto tempo. Está escrita para ser lida, não para ser aceite às cegas.",
+    sections: [
+      {
+        title: "Quem é responsável",
+        body: [
+          "O responsável pelo tratamento é [NOME DA ENTIDADE], com sede em [MORADA], contactável em [EMAIL DE PRIVACIDADE]. Se tiveres um pedido sobre os teus dados, é para aqui que escreves.",
+        ],
+      },
+      {
+        title: "Que dados guardamos",
+        body: [
+          "Conta: email, palavra-passe cifrada ou a ligação à tua conta Google, idioma, mercado e fuso horário.",
+          "Perfil: nome, fotografia (se a puseres), objetivo, experiência, frequência semanal e, se os preencheres, peso, altura e data de nascimento.",
+          "Treino: sessões, exercícios, séries, cargas, repetições, esforço percebido e treinos guardados.",
+          "Prontidão: horas e qualidade do sono, energia, dores musculares e batimento cardíaco em repouso. São dados de saúde e só os guardamos com a tua autorização explícita, pedida no ecrã de prontidão. Podes retirá-la em Conta a qualquer momento; nesse caso o histórico de prontidão é apagado na hora.",
+          "Comunidade: publicações, fotografias que partilhes, apoios, quem segues e denúncias que faças.",
+          "Pagamentos: o identificador de cliente e o estado da subscrição. Os dados do cartão, MB WAY ou Pix ficam no Stripe; nunca passam por nós.",
+        ],
+      },
+      {
+        title: "Para quê, e com que base",
+        body: [
+          "Prestar o serviço que subscreveste — registar treinos, sugerir cargas, calcular a prontidão — com base no contrato contigo.",
+          "Tratar dados de saúde para a prontidão, com base no teu consentimento explícito (art. 9.º, n.º 2, alínea a, do RGPD).",
+          "Mostrar as tuas publicações a outros membros da comunidade, com base no contrato: publicar é uma ação tua.",
+          "Cobrar a subscrição e cumprir obrigações fiscais, com base no contrato e na lei.",
+          "Manter o serviço seguro — limites de pedidos, proteção contra abuso — com base no nosso interesse legítimo em operá-lo.",
+        ],
+      },
+      {
+        title: "Quem toca nos dados por nós",
+        body: [
+          "Supabase (base de dados e autenticação), servidores na União Europeia, região de Paris.",
+          "Vercel (alojamento da aplicação).",
+          "Stripe (pagamentos e faturação).",
+          "Cloudflare Turnstile (proteção contra robôs no registo e na entrada).",
+          "Google (só se entrares com a conta Google).",
+          "Não vendemos dados, não os cedemos para publicidade e não fazemos perfis para terceiros.",
+        ],
+      },
+      {
+        title: "Durante quanto tempo",
+        body: [
+          "Enquanto a conta existir. Quando pedes para a apagar, ficas com três meses para exportar ou voltar atrás; passado esse prazo apagamos tudo em definitivo.",
+          "O histórico de prontidão é apagado no momento em que retiras a autorização, mesmo que a conta continue.",
+          "As publicações que apagas deixam de ser visíveis de imediato e são eliminadas com a conta.",
+          "Os registos de faturação ficam o tempo que a lei fiscal obriga.",
+        ],
+      },
+      {
+        title: "Os teus direitos",
+        body: [
+          "Aceder, corrigir, exportar e apagar os teus dados — os três primeiros estão em Conta, sem depender de ninguém; o quarto também, com o prazo de três meses acima.",
+          "Retirar o consentimento à prontidão, sem que isso afete o resto da conta.",
+          "Opor-te a tratamentos baseados em interesse legítimo, e apresentar queixa à autoridade de controlo: CNPD em Portugal, ANPD no Brasil.",
+        ],
+      },
+      {
+        title: "Cookies e dispositivo",
+        body: [
+          "Usamos apenas os cookies necessários para manter a sessão iniciada e lembrar o tema. Não há cookies de publicidade nem de rastreio entre sites.",
+          "As fotografias de progresso, quando essa função existir, ficam guardadas só no teu dispositivo e nunca são enviadas para os nossos servidores.",
+        ],
+      },
+    ],
+  },
+
   marketing: {
     fitness: {
       eyebrow: "Mind · Muscle",
@@ -433,6 +503,20 @@ const dictionary = {
     },
     progress: {
       title: "Progresso",
+      exercisesTitle: "Os teus exercícios",
+      exercisesHint:
+        "A melhor marca é a carga mais alta que registaste. Apagar os registos de um exercício recomeça-o do zero: a sugestão de carga volta a pedir-te um valor.",
+      exercisesBest: "Melhor",
+      exercisesSets: "{n} séries · {s} sessões",
+      exercisesLast: "Último: {date}",
+      exercisesDelete: "Apagar registos",
+      exercisesDeleteConfirm:
+        "Apaga todas as séries de {name}, de vez. As publicações que partilhaste não mudam.",
+      exercisesDeleteGo: "Apagar",
+      exercisesDeleteKeep: "Manter",
+      exercisesDeleted: "{name}: {n} séries apagadas.",
+      exercisesDeleteFailed: "Não foi possível apagar. Tenta novamente.",
+      exercisesShowAll: "Ver todos ({n})",
       readinessCheckTitle: "A prontidão acertou?",
       readinessArrival: "Como chegaste",
       readinessEffort: "Esforço",
@@ -689,14 +773,19 @@ const dictionary = {
     submit: "Ver recomendação",
     recalculate: "Refazer",
     states: {
-      strong: "Treinar forte",
-      moderate: "Treinar moderado",
-      rest: "Descansar",
+      strong: "Boa",
+      moderate: "Moderada",
+      rest: "Em recuperação",
     },
     advice: {
       strong: "Estás pronto para progredir. Se na última sessão completaste as repetições com duas ou mais em reserva, sobe a carga.",
       moderate: "Mantém as séries mas alivia: menos 5 a 10% na carga e mais uma repetição em reserva. O estímulo mantém-se, o custo desce.",
-      rest: "Hoje o custo supera o rendimento. Se treinares, fica em trabalho leve e técnico — e não é sinal de fraqueza, é o que o programa pede.",
+      rest: "O corpo está a pedir recuperação. Podes treinar na mesma, leve e técnico — é o programa a adaptar-se a ti, não uma proibição.",
+    },
+    decision: {
+      strong: "Treina forte. Se na última sessão sobraram duas ou mais repetições, sobe a carga.",
+      moderate: "Treina, com ajuste: carga −7,5% e mais uma repetição em reserva. As sugestões de hoje já vêm assim.",
+      rest: "Treina leve, se quiseres: carga −20% e duas repetições em reserva. É uma recomendação, não uma proibição.",
     },
     whyTitle: "Porquê",
     why: {
@@ -712,6 +801,20 @@ const dictionary = {
       loadSpike: "Carga desta semana acima da tua média",
       wellRested: "Dias desde o último treino",
     },
+    trend: {
+      sleepDebt: "↓ {value} vs. o teu habitual",
+      restingHrUp: "↑ {value} vs. a tua média",
+      loadSpike: "↑ {value} vs. a tua média semanal",
+      consecutiveDays: "{value} dias seguidos",
+      wellRested: "{value} dias desde o último treino",
+    },
+    summaryNeutral: "Sono, energia e dores dentro do teu habitual.",
+    summaryNoBaseline: "Ainda sem histórico para comparar; a leitura vem só do que respondeste.",
+    summaryJoin: " e ",
+    detailsShow: "Ver detalhes",
+    detailsHide: "Esconder detalhes",
+    signalsTitle: "Os sinais por trás",
+    signalsHint: "Cada linha compara-te contigo, não com uma tabela. Um sinal sozinho nunca decide.",
     avoidTitle: "Grupos a poupar hoje",
     avoidHint: "Doridos ou treinados nas últimas 48 horas.",
     baselineTitle: "Ainda a construir a tua base",
@@ -722,6 +825,36 @@ const dictionary = {
     appliedToWorkout: "Aplicado ao treino de hoje",
     adjustLoad: "Carga sugerida",
     adjustRir: "Repetições em reserva",
+    consent: {
+      title: "Antes de começar: os teus dados de saúde",
+      body:
+        "Para calcular a prontidão guardamos o que respondes: horas e qualidade do sono, energia, dores musculares e, se o medires, o batimento em repouso. São dados de saúde, e por isso pedimos-te autorização explícita antes de guardar o primeiro registo.",
+      items: [
+        "Servem só para a tua prontidão e para as sugestões de carga do dia.",
+        "Nunca aparecem no teu perfil nem na comunidade.",
+        "Retiras a autorização quando quiseres, em Conta. O histórico de prontidão é apagado na hora.",
+      ],
+      privacy: "Ler a política de privacidade",
+      accept: "Autorizo e quero continuar",
+      decline: "Agora não",
+      failed: "Não foi possível registar a autorização. Tenta novamente.",
+      settingsTitle: "Dados de prontidão",
+      settingsBody:
+        "O questionário de prontidão guarda dados de saúde: sono, energia, dores e batimento em repouso.",
+      settingsGiven: "Autorização dada a {date}.",
+      settingsNone: "Sem autorização. O questionário está desligado até a dares no ecrã de prontidão.",
+      withdraw: "Retirar autorização e apagar o histórico",
+      withdrawConfirm:
+        "Apaga todos os registos de prontidão, de vez. Os treinos e as séries ficam.",
+      withdrawGo: "Apagar e retirar",
+      withdrawKeep: "Manter",
+      withdrawDone: "Autorização retirada. {n} registos apagados.",
+    },
+    saveFailed: "Não foi possível guardar. Tenta novamente.",
+    todayTitle: "Como estou hoje?",
+    todayOpen: "Ver prontidão",
+    todayEmpty: "Ainda não avaliaste a prontidão de hoje.",
+    outOf: "/100",
   },
 
   workout: {
@@ -849,6 +982,13 @@ const dictionary = {
     rest: "Descanso",
     restHint: "O próximo estímulo agradece.",
     addSeconds: "+30s",
+    restDone: "Descanso terminado",
+    restAlert: "Aviso no fim",
+    restAlertTitle: "Descanso terminado",
+    restAlertBody: "Próxima série.",
+    restAlertDenied: "As notificações estão bloqueadas nas definições do browser.",
+    restAlertIos: "No iPhone o aviso só funciona com a AXON instalada no ecrã inicial (Partilhar → Adicionar ao ecrã principal).",
+
     nextSet: "Série seguinte",
     changeExercise: "Trocar de exercício",
     endWorkout: "Terminar treino",

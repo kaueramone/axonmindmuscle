@@ -2,17 +2,16 @@
 
 import { useState } from "react";
 
+import { ReadinessConsent } from "@/components/app/readiness-consent";
+import { ReadinessSummary } from "@/components/app/readiness-summary";
 import { Button } from "@/components/ui/button";
-import { Check, Info } from "@/components/ui/icons";
-import { Alert, Badge, Card, Spinner } from "@/components/ui/surface";
+import { Alert, Card, Spinner } from "@/components/ui/surface";
 import type { Locale } from "@/lib/i18n/config";
 import type { Dict } from "@/lib/i18n/types";
 import { saveReadinessAction } from "@/lib/readiness/actions";
+import { presentReadiness } from "@/lib/readiness/present";
 import {
-  computeReadiness,
-  prescriptionFor,
   type ReadinessAnswers,
-  type ReadinessContext,
   type ReadinessResult,
 } from "@/lib/readiness/score";
 import { route } from "@/lib/routes";
@@ -32,12 +31,6 @@ const MUSCLE_KEYS: MuscleGroup[] = [
   "gemeos",
   "lombar",
 ];
-
-const TONE = {
-  strong: { text: "text-success", bg: "bg-success/12", border: "border-success/30" },
-  moderate: { text: "text-warning", bg: "bg-warning/12", border: "border-warning/30" },
-  rest: { text: "text-danger", bg: "bg-danger/12", border: "border-danger/30" },
-} as const;
 
 /** Botões de 1 a 5, todos no mesmo sentido: à esquerda mau, à direita bom. */
 function Scale({
@@ -91,15 +84,17 @@ function Scale({
 export function ReadinessPanel({
   locale,
   dict,
-  context,
   existing,
+  consentAt,
 }: {
   locale: Locale;
   dict: Dict;
-  context: ReadinessContext;
   existing: ReadinessResult | null;
+  /** Data do consentimento aos dados de saúde; null bloqueia o formulário. */
+  consentAt: string | null;
 }) {
   const copy = dict.readiness;
+  const [consentimento, setConsentimento] = useState<string | null>(consentAt);
 
   const [answers, setAnswers] = useState<ReadinessAnswers>({
     sleepHours: null,
@@ -111,124 +106,42 @@ export function ReadinessPanel({
   });
   const [result, setResult] = useState<ReadinessResult | null>(existing);
   const [busy, setBusy] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
 
   const podeSubmeter =
     answers.energy != null || answers.sleepQuality != null || answers.soreness != null;
 
   async function submeter() {
     setBusy(true);
+    setErro(null);
     // O servidor recalcula e devolve o que ficou gravado. Mostramos isso e
     // nao a conta feita aqui: se as duas divergirem, a pessoa tem de ver a
-    // que fica no historico. O calculo local serve so de rede de seguranca
-    // quando a gravacao falha.
+    // que fica no historico. Se a gravacao falhar (rede, ou consentimento
+    // retirado noutro separador) dizemo-lo em vez de mostrar um resultado
+    // "registado hoje" que nao ficou registado em lado nenhum.
     const gravado = await saveReadinessAction({ answers });
-    setResult(gravado ?? computeReadiness(answers, context));
+    if (!gravado) {
+      setErro(copy.saveFailed);
+      setBusy(false);
+      return;
+    }
+    setResult(gravado);
     setBusy(false);
   }
 
   /* ---------------- Resultado ---------------- */
 
   if (result) {
-    const tone = TONE[result.state];
-    const receita = prescriptionFor(result.state);
+    const presented = presentReadiness(result, copy);
 
     return (
       <div className="flex flex-col gap-5">
-        <Card className={cn("flex flex-col gap-4 border", tone.border, tone.bg)}>
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="label-brand text-fg-subtle">{copy.scoreLabel}</p>
-              <p className={cn("data-mono mt-1 text-[3rem] leading-none", tone.text)}>
-                {result.score}
-              </p>
-            </div>
-            <Badge tone="neutral">{copy.savedToday}</Badge>
-          </div>
-
-          <div>
-            <h2 className={cn("text-title2", tone.text)}>{copy.states[result.state]}</h2>
-            <p className="mt-2 text-callout leading-relaxed text-fg-muted">
-              {copy.advice[result.state]}
-            </p>
-          </div>
-        </Card>
-
-        {receita.rirDelta > 0 ? (
-          <Card className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-subhead font-medium text-fg">
-                {copy.appliedToWorkout}
-              </p>
-              <p className="mt-1 text-caption text-fg-subtle">
-                {copy.adjustLoad} {Math.round(receita.loadDelta * 100)}% · {copy.adjustRir}{" "}
-                +{receita.rirDelta}
-              </p>
-            </div>
-            <Check className="size-5 shrink-0 text-success" />
-          </Card>
-        ) : null}
-
-        {result.drivers.length > 0 ? (
-          <Card className="flex flex-col gap-3">
-            <h3 className="label-brand text-fg-subtle">{copy.whyTitle}</h3>
-            <ul className="flex flex-col gap-2">
-              {result.drivers.map((d) => {
-                const chave =
-                  d.key === "energy" && d.direction === "up"
-                    ? "energyUp"
-                    : d.key === "sleepQuality" && d.direction === "up"
-                      ? "sleepQualityUp"
-                      : d.key;
-                const texto = copy.why[chave as keyof typeof copy.why];
-                if (!texto) return null;
-                return (
-                  <li key={d.key + d.direction} className="flex items-center gap-2.5">
-                    <span
-                      className={cn(
-                        "size-1.5 shrink-0 rounded-full",
-                        d.direction === "up" ? "bg-success" : "bg-warning",
-                      )}
-                    />
-                    <span className="text-subhead text-fg-muted">
-                      {texto}
-                      {d.detail ? (
-                        <span className="data-mono text-fg-subtle"> · {d.detail}</span>
-                      ) : null}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          </Card>
-        ) : null}
-
-        {result.avoidMuscles.length > 0 ? (
-          <Card className="flex flex-col gap-3">
-            <div>
-              <h3 className="label-brand text-fg-subtle">{copy.avoidTitle}</h3>
-              <p className="mt-1.5 text-caption text-fg-subtle">{copy.avoidHint}</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {result.avoidMuscles.map((m) => (
-                <Badge key={m} tone="warning">
-                  {dict.app.progress.muscles[m as keyof typeof dict.app.progress.muscles] ??
-                    m}
-                </Badge>
-              ))}
-            </div>
-          </Card>
-        ) : null}
-
-        {result.needsBaseline ? (
-          <Alert tone="info" icon={<Info className="size-4" />}>
-            <strong className="font-semibold">{copy.baselineTitle}.</strong>{" "}
-            {copy.baselineHint}
-          </Alert>
-        ) : null}
-
-        <p className="px-1 text-caption leading-relaxed text-fg-subtle">
-          {copy.honesty}
-        </p>
+        <ReadinessSummary
+          result={result}
+          presented={presented}
+          dict={dict}
+          badge={copy.savedToday}
+        />
 
         <div className="flex flex-col gap-2.5">
           <Button
@@ -251,6 +164,15 @@ export function ReadinessPanel({
         </div>
       </div>
     );
+  }
+
+  /* ---------------- Consentimento ---------------- */
+
+  // Sem consentimento o servidor recusa a gravação (política de INSERT), por
+  // isso o formulário nem aparece: pedir respostas que não vão ser guardadas
+  // seria enganar a pessoa.
+  if (!consentimento) {
+    return <ReadinessConsent locale={locale} dict={dict} onAccepted={setConsentimento} />;
   }
 
   /* ---------------- Formulário ---------------- */
@@ -378,6 +300,8 @@ export function ReadinessPanel({
           {copy.restingHrHint}
         </p>
       </Card>
+
+      {erro ? <Alert tone="danger">{erro}</Alert> : null}
 
       <Button size="lg" fullWidth onClick={submeter} disabled={!podeSubmeter || busy}>
         {busy ? <Spinner /> : null}

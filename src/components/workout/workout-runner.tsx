@@ -31,7 +31,16 @@ import {
   type Suggestion,
 } from "@/lib/workout/progression";
 import { useMetronome, type Tempo } from "@/lib/workout/use-metronome";
-import { formatDuration, useTimer } from "@/lib/workout/use-timer";
+import {
+  isInstalled,
+  isIos,
+  readRestAlertPreference,
+  requestRestAlert,
+  restAlertSupport,
+  scheduleRestAlert,
+  writeRestAlertPreference,
+} from "@/lib/workout/rest-alert";
+import { formatDuration, useTimer, useWakeLock } from "@/lib/workout/use-timer";
 import type { ReadinessState } from "@/lib/readiness/score";
 
 export type ReadinessHint = {
@@ -174,6 +183,14 @@ export function WorkoutRunner({
   const [queued, setQueued] = useState(false);
   const [logged, setLogged] = useState<LoggedSet[]>([]);
   const [restLeft, setRestLeft] = useState(REST_SECONDS);
+  /* O descanso é um prazo, não um contador: com o ecrã bloqueado os
+     intervalos param, e ao voltar o que conta é quanto falta para o prazo. */
+  const [restEndsAt, setRestEndsAt] = useState<number | null>(null);
+  const [restAlert, setRestAlert] = useState(false);
+  const [restAlertState, setRestAlertState] = useState<
+    "unsupported" | "default" | "granted" | "denied"
+  >("default");
+  const restAvisado = useRef(false);
   const [startedAt] = useState(() => Date.now());
   const actualReps = useRef(0);
 
@@ -214,20 +231,62 @@ export function WorkoutRunner({
     };
   }, []);
 
-  /* Contagem do descanso */
+  /* Contagem do descanso, ancorada ao prazo. */
   useEffect(() => {
-    if (step !== "resting") return;
-    const id = setInterval(() => {
-      setRestLeft((s) => {
-        if (s <= 1) {
-          clearInterval(id);
-          return 0;
-        }
-        return s - 1;
-      });
-    }, 1000);
-    return () => clearInterval(id);
-  }, [step]);
+    if (step !== "resting" || restEndsAt == null) return;
+    const ler = () => setRestLeft(Math.max(0, Math.ceil((restEndsAt - Date.now()) / 1000)));
+    ler();
+    const id = setInterval(ler, 500);
+    document.addEventListener("visibilitychange", ler);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", ler);
+    };
+  }, [step, restEndsAt]);
+
+  useWakeLock(step === "resting");
+
+  /* Preferência do aviso e estado da permissão, lidos no cliente. */
+  useEffect(() => {
+    const estado = restAlertSupport();
+    setRestAlertState(estado);
+    setRestAlert(estado === "granted" && readRestAlertPreference());
+  }, []);
+
+  /* Aviso com o ecrã bloqueado: agendado ao entrar no descanso e cancelado
+     ao sair dele ou ao prolongá-lo (o prazo muda e o efeito corre de novo). */
+  useEffect(() => {
+    if (step !== "resting" || restEndsAt == null || !restAlert) return;
+    return scheduleRestAlert(restEndsAt, {
+      title: copy.restAlertTitle,
+      body: copy.restAlertBody,
+    });
+  }, [step, restEndsAt, restAlert, copy.restAlertTitle, copy.restAlertBody]);
+
+  /* Em primeiro plano, o fim do descanso vibra uma vez. */
+  useEffect(() => {
+    if (step !== "resting") {
+      restAvisado.current = false;
+      return;
+    }
+    if (restLeft === 0 && !restAvisado.current) {
+      restAvisado.current = true;
+      if (haptics) navigator.vibrate?.([200, 100, 200]);
+    }
+  }, [step, restLeft, haptics]);
+
+  const alternarAviso = useCallback(async () => {
+    if (restAlert) {
+      setRestAlert(false);
+      writeRestAlertPreference(false);
+      return;
+    }
+    const estado = await requestRestAlert();
+    setRestAlertState(estado);
+    const ligado = estado === "granted";
+    setRestAlert(ligado);
+    writeRestAlertPreference(ligado);
+  }, [restAlert]);
 
   const beginSet = useCallback(async () => {
     setBusy(true);
@@ -290,6 +349,7 @@ export function WorkoutRunner({
     ]);
     setBusy(false);
     setRestLeft(REST_SECONDS);
+    setRestEndsAt(Date.now() + REST_SECONDS * 1000);
     setStep("resting");
   }, [timer, exercise, sessionId, userId, logged.length]);
 
@@ -327,6 +387,7 @@ export function WorkoutRunner({
     ]);
     setBusy(false);
     setRestLeft(REST_SECONDS);
+    setRestEndsAt(Date.now() + REST_SECONDS * 1000);
     setStep("resting");
   }, [
     exercise,
@@ -779,9 +840,31 @@ export function WorkoutRunner({
                     {etiqueta}
                   </button>
                 ))}
+                {restAlertState !== "unsupported" ? (
+                  <button
+                    type="button"
+                    onClick={() => void alternarAviso()}
+                    aria-pressed={restAlert}
+                    disabled={restAlertState === "denied"}
+                    className={cn(
+                      "rounded-full border px-4 py-2 text-subhead transition-colors disabled:opacity-50",
+                      restAlert
+                        ? "border-accent bg-accent-soft text-accent"
+                        : "border-hairline bg-surface text-fg-subtle",
+                    )}
+                  >
+                    {copy.restAlert}
+                  </button>
+                ) : null}
               </div>
 
-              <p className="text-caption text-fg-subtle">{copy.keepAwake}</p>
+              <p className="text-caption text-fg-subtle">
+                {copy.keepAwake}
+                {restAlertState === "denied" ? ` ${copy.restAlertDenied}` : null}
+                {restAlertState !== "unsupported" && isIos() && !isInstalled()
+                  ? ` ${copy.restAlertIos}`
+                  : null}
+              </p>
             </>
           )}
 
@@ -874,10 +957,12 @@ export function WorkoutRunner({
               {String(Math.floor(restLeft / 60)).padStart(2, "0")}:
               {String(restLeft % 60).padStart(2, "0")}
             </p>
-            <p className="text-callout text-fg-muted">{copy.rest}</p>
+            <p className="text-callout text-fg-muted">
+              {restLeft === 0 ? copy.restDone : copy.rest}
+            </p>
             <button
               type="button"
-              onClick={() => setRestLeft((s) => s + 30)}
+              onClick={() => setRestEndsAt((fim) => (fim ?? Date.now()) + 30_000)}
               className="rounded-full border border-hairline bg-surface px-4 py-2 text-subhead text-fg-muted transition-colors hover:text-fg"
             >
               {copy.addSeconds}

@@ -29,7 +29,7 @@ export default async function ReadinessPage({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("timezone")
+    .select("timezone, readiness_consent_at")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -90,8 +90,8 @@ export default async function ReadinessPage({
         <ReadinessPanel
           locale={locale}
           dict={dict}
-          context={context}
           existing={existing}
+          consentAt={profile?.readiness_consent_at ?? null}
         />
       </div>
     </>

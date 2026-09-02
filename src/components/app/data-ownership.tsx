@@ -10,6 +10,7 @@ import {
   requestAccountDeletionAction,
 } from "@/lib/account/actions";
 import { formatDate, type Locale } from "@/lib/i18n/config";
+import { withdrawReadinessConsentAction } from "@/lib/readiness/consent";
 import { route } from "@/lib/routes";
 import { t } from "@/lib/i18n/interpolate";
 import type { Dict } from "@/lib/i18n/types";
@@ -26,14 +27,21 @@ export function DataOwnership({
   dict,
   plan,
   deletionRequestedAt,
+  readinessConsentAt,
 }: {
   locale: Locale;
   dict: Dict;
   plan: "free" | "pro";
   /** Quando a pessoa pediu para apagar a conta, se pediu. */
   deletionRequestedAt: string | null;
+  /** Consentimento ao questionário de prontidão (dados de saúde). */
+  readinessConsentAt: string | null;
 }) {
   const copy = dict.app.data;
+  const consentCopy = dict.readiness.consent;
+  const [consentimento, setConsentimento] = useState<string | null>(readinessConsentAt);
+  const [confirmarRetirada, setConfirmarRetirada] = useState(false);
+  const [retirada, setRetirada] = useState<string | null>(null);
   const [confirmar, setConfirmar] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [aCorrer, iniciar] = useTransition();
@@ -58,6 +66,20 @@ export function DataOwnership({
     iniciar(async () => {
       const r = await cancelAccountDeletionAction();
       if (!r.ok) setErro(copy.deleteFailed);
+    });
+  }
+
+  function retirarConsentimento() {
+    setErro(null);
+    iniciar(async () => {
+      const r = await withdrawReadinessConsentAction();
+      if (!r.ok) {
+        setErro(consentCopy.failed);
+        return;
+      }
+      setConsentimento(null);
+      setConfirmarRetirada(false);
+      setRetirada(t(consentCopy.withdrawDone, { n: r.deleted ?? 0 }));
     });
   }
 
@@ -86,6 +108,60 @@ export function DataOwnership({
           trailing={plan === "pro" ? null : <Badge tone="accent">PRO</Badge>}
         />
       </ListGroup>
+
+      <Card className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1.5">
+          <h3 className="text-headline font-semibold text-fg">{consentCopy.settingsTitle}</h3>
+          <p className="text-callout leading-relaxed text-fg-muted">
+            {consentCopy.settingsBody}
+          </p>
+          <p className="text-subhead text-fg-subtle">
+            {consentimento
+              ? t(consentCopy.settingsGiven, { date: formatDate(new Date(consentimento), locale) })
+              : consentCopy.settingsNone}
+          </p>
+        </div>
+
+        {retirada ? <Alert tone="info">{retirada}</Alert> : null}
+
+        {consentimento ? (
+          confirmarRetirada ? (
+            <div className="flex flex-col gap-3">
+              <Alert tone="danger">{consentCopy.withdrawConfirm}</Alert>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  fullWidth
+                  disabled={aCorrer}
+                  onClick={() => setConfirmarRetirada(false)}
+                >
+                  {consentCopy.withdrawKeep}
+                </Button>
+                <Button
+                  type="button"
+                  variant="danger"
+                  fullWidth
+                  disabled={aCorrer}
+                  onClick={retirarConsentimento}
+                >
+                  {aCorrer ? <Spinner /> : null}
+                  {consentCopy.withdrawGo}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button
+              type="button"
+              variant="secondary"
+              fullWidth
+              onClick={() => setConfirmarRetirada(true)}
+            >
+              {consentCopy.withdraw}
+            </Button>
+          )
+        ) : null}
+      </Card>
 
       {deletionRequestedAt && apagaEm ? (
         <Card className="flex flex-col gap-4">

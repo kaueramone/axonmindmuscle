@@ -31,31 +31,7 @@ export function useTimer({ onTarget }: { onTarget?: () => void } = {}) {
     };
   }, [running, ler]);
 
-  /* Mantém o ecrã aceso enquanto corre, como no metrónomo. */
-  useEffect(() => {
-    if (!running) return;
-    let sentinela: { release: () => Promise<void> } | null = null;
-    let cancelado = false;
-
-    const wakeLock = (
-      navigator as Navigator & {
-        wakeLock?: { request: (t: "screen") => Promise<{ release: () => Promise<void> }> };
-      }
-    ).wakeLock;
-
-    void wakeLock
-      ?.request("screen")
-      .then((s) => {
-        if (cancelado) void s.release();
-        else sentinela = s;
-      })
-      .catch(() => {});
-
-    return () => {
-      cancelado = true;
-      void sentinela?.release().catch(() => {});
-    };
-  }, [running]);
+  useWakeLock(running);
 
   const start = useCallback(() => {
     inicio.current = performance.now();
@@ -106,6 +82,50 @@ export function useTimer({ onTarget }: { onTarget?: () => void } = {}) {
   );
 
   return { elapsed, running, start, pause, resume, stop, reset, marcarAlvo };
+}
+
+/**
+ * Mantém o ecrã aceso enquanto `active` for verdadeiro, como no metrónomo.
+ * Partilhado pelo cronómetro e pelo descanso: os dois são momentos em que a
+ * pessoa pousa o telemóvel e espera que ele continue a contar.
+ */
+export function useWakeLock(active: boolean) {
+  useEffect(() => {
+    if (!active) return;
+    let sentinela: { release: () => Promise<void> } | null = null;
+    let cancelado = false;
+
+    const wakeLock = (
+      navigator as Navigator & {
+        wakeLock?: { request: (t: "screen") => Promise<{ release: () => Promise<void> }> };
+      }
+    ).wakeLock;
+
+    const pedir = () => {
+      void wakeLock
+        ?.request("screen")
+        .then((s) => {
+          if (cancelado) void s.release();
+          else sentinela = s;
+        })
+        .catch(() => {});
+    };
+
+    // O sistema liberta o bloqueio quando a página sai de vista; ao voltar,
+    // pede-se outra vez, senão o ecrã apaga-se a meio do descanso seguinte.
+    const aoVoltar = () => {
+      if (document.visibilityState === "visible") pedir();
+    };
+
+    pedir();
+    document.addEventListener("visibilitychange", aoVoltar);
+
+    return () => {
+      cancelado = true;
+      document.removeEventListener("visibilitychange", aoVoltar);
+      void sentinela?.release().catch(() => {});
+    };
+  }, [active]);
 }
 
 /** mm:ss a partir de segundos. */

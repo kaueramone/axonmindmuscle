@@ -127,3 +127,58 @@ self.addEventListener("fetch", (event) => {
     );
   }
 });
+
+/* -------------------------------------------------------------------------
+ * Aviso no fim do descanso.
+ *
+ * A página manda a hora a que o descanso acaba; o service worker espera e
+ * mostra a notificação. Vive aqui porque a página é travada quando o ecrã
+ * bloqueia e o service worker, no Android, normalmente não. Não é garantido
+ * — o sistema pode encerrar o worker antes — e por isso a página agenda o
+ * mesmo aviso do lado dela, com a mesma `tag`: o segundo substitui o
+ * primeiro em vez de o duplicar.
+ * ---------------------------------------------------------------------- */
+
+const avisosDescanso = new Map();
+
+self.addEventListener("message", (event) => {
+  const dados = event.data;
+  if (!dados || typeof dados !== "object") return;
+
+  if (dados.type === "axon:descanso:cancelar") {
+    const pendente = avisosDescanso.get(dados.tag);
+    if (pendente) clearTimeout(pendente);
+    avisosDescanso.delete(dados.tag);
+    return;
+  }
+
+  if (dados.type === "axon:descanso") {
+    const pendente = avisosDescanso.get(dados.tag);
+    if (pendente) clearTimeout(pendente);
+
+    const atraso = Math.max(0, Number(dados.at) - Date.now());
+    const id = setTimeout(() => {
+      avisosDescanso.delete(dados.tag);
+      self.registration
+        .showNotification(String(dados.title || "AXON"), {
+          body: String(dados.body || ""),
+          tag: dados.tag,
+          icon: "/icon-192.png",
+          vibrate: [200, 100, 200],
+        })
+        .catch(() => {});
+    }, atraso);
+    avisosDescanso.set(dados.tag, id);
+  }
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((lista) => {
+      const aberto = lista.find((c) => /\/(pt-pt|pt-br)\/treino/.test(c.url));
+      if (aberto) return aberto.focus();
+      return self.clients.openWindow("/");
+    }),
+  );
+});

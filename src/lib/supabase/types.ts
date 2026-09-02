@@ -347,6 +347,7 @@ export type Database = {
           deletion_requested_at: string | null;
           pro_granted_at: string | null;
           pro_granted_by: string | null;
+          readiness_consent_at: string | null;
           plan: Database["public"]["Enums"]["user_plan"];
           role: Database["public"]["Enums"]["user_role"];
           stripe_customer_id: string | null;
@@ -660,6 +661,30 @@ export type Database = {
           duration_s: number | null;
           intensity_zone: Database["public"]["Enums"]["intensity_zone"] | null;
         }[];
+      };
+      aceitar_consentimento_prontidao: {
+        Args: Record<string, never>;
+        Returns: string;
+      };
+      retirar_consentimento_prontidao: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
+      exercise_history_summary: {
+        Args: Record<string, never>;
+        Returns: {
+          exercise_id: string | null;
+          exercise_name: string;
+          sets: number;
+          sessions: number;
+          best_weight_kg: number | null;
+          best_reps: number | null;
+          last_date: string | null;
+        }[];
+      };
+      apagar_registos_exercicio: {
+        Args: { p_exercise_id: string | null; p_exercise_name: string };
+        Returns: { sets_apagados: number; sessoes_apagadas: number }[];
       };
       readiness_context: {
         Args: Record<string, never>;

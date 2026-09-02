@@ -5,13 +5,17 @@ import Link from "next/link";
 
 import { AppHeader } from "@/components/app/app-header";
 import { Greeting } from "@/components/app/greeting";
+import { ReadinessSummary } from "@/components/app/readiness-summary";
 import { Bolt, ChevronRight, Sparkle, Users } from "@/components/ui/icons";
 import { ButtonLink } from "@/components/ui/button";
 import { Badge, Card, ListGroup, ListRow } from "@/components/ui/surface";
 import { route } from "@/lib/routes";
 import { getDictionary } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n/config";
+import { presentReadiness } from "@/lib/readiness/present";
+import type { ReadinessResult } from "@/lib/readiness/score";
 import { createClient } from "@/lib/supabase/server";
+import { localDate } from "@/lib/workout/periods";
 
 export const metadata: Metadata = { title: "Hoje", robots: { index: false } };
 
@@ -32,9 +36,30 @@ export default async function TodayPage({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name, plan")
+    .select("display_name, plan, timezone")
     .eq("id", user!.id)
     .maybeSingle();
+
+  // "Como estou hoje?" é a primeira pergunta de quem abre a aplicação. Se o
+  // registo de hoje existe, a resposta aparece aqui, sem obrigar a navegar
+  // — o número, o estado e uma frase; os sinais ficam fechados.
+  const hoje = localDate(new Date(), profile?.timezone ?? "Europe/Lisbon");
+  const { data: registoDeHoje } = await supabase
+    .from("readiness_checkins")
+    .select("score, state, drivers, sore_muscles")
+    .eq("user_id", user!.id)
+    .eq("local_date", hoje)
+    .maybeSingle();
+
+  const prontidao: ReadinessResult | null = registoDeHoje
+    ? {
+        score: registoDeHoje.score,
+        state: registoDeHoje.state,
+        drivers: (registoDeHoje.drivers ?? []) as ReadinessResult["drivers"],
+        avoidMuscles: registoDeHoje.sore_muscles ?? [],
+        needsBaseline: false,
+      }
+    : null;
 
   const firstName = profile?.display_name?.split(" ")[0] ?? "";
   const ehPro = profile?.plan === "pro";
@@ -97,13 +122,34 @@ export default async function TodayPage({
           </ButtonLink>
         </Card>
 
-        <ListRow
-          icon={<Bolt className="size-4.5" />}
-          label={dict.readiness.cta}
-          detail={dict.readiness.intro}
-          href={route(locale, "readiness")}
-          className="rounded-xl border border-hairline bg-surface"
-        />
+        <section className="flex flex-col gap-3">
+          <h2 className="label-brand px-1 text-fg-subtle">{dict.readiness.todayTitle}</h2>
+          {prontidao ? (
+            <>
+              <ReadinessSummary
+                result={prontidao}
+                presented={presentReadiness(prontidao, dict.readiness)}
+                dict={dict}
+                compact
+              />
+              <Link
+                href={route(locale, "readiness")}
+                className="flex items-center gap-1 self-end px-1 text-subhead font-medium text-accent"
+              >
+                {dict.readiness.todayOpen}
+                <ChevronRight className="size-4" />
+              </Link>
+            </>
+          ) : (
+            <ListRow
+              icon={<Bolt className="size-4.5" />}
+              label={dict.readiness.cta}
+              detail={dict.readiness.intro}
+              href={route(locale, "readiness")}
+              className="rounded-xl border border-hairline bg-surface"
+            />
+          )}
+        </section>
 
         <ListGroup title={copy.toolsTitle}>
           {tools.map((tool) => (

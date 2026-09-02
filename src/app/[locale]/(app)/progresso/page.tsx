@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { AppHeader } from "@/components/app/app-header";
+import { ExerciseRecords, type ExerciseRecord } from "@/components/app/exercise-records";
 import { LoadSummary, type LoadDay, type ZoneRow } from "@/components/app/load-summary";
 import {
   ReadinessCheck,
@@ -119,10 +120,11 @@ export default async function ProgressPage({
   );
 
   // A prontidão a prestar contas: o que previu contra o que aconteceu.
-  const { data: prontidaoVsDesempenho } = await supabase.rpc(
-    "readiness_vs_performance",
-    { p_from: from, p_to: to },
-  );
+  const [{ data: prontidaoVsDesempenho }, { data: exercicios }] = await Promise.all([
+    supabase.rpc("readiness_vs_performance", { p_from: from, p_to: to }),
+    // Todos os exercícios, sem filtro de período: é a lista de onde se apaga.
+    supabase.rpc("exercise_history_summary"),
+  ]);
 
   const linhas = series ?? [];
   const volumeTotal = linhas.reduce((total, s) => total + Number(s.volume_kg ?? 0), 0);
@@ -222,6 +224,12 @@ export default async function ProgressPage({
         <RoutineProgress
           rotinas={rotinasComSemanas}
           copy={dict.workout.routines}
+          locale={locale}
+        />
+
+        <ExerciseRecords
+          registos={(exercicios ?? []) as ExerciseRecord[]}
+          copy={copy}
           locale={locale}
         />
 
