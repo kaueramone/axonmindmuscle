@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 
 import { LogoAxon } from "@/components/brand/logo";
 import { ThemeToggle } from "@/components/app/theme-toggle";
-import { Chart, Bolt, SignOut, Users } from "@/components/ui/icons";
+import { Alert, Chart, Bolt, SignOut, Users } from "@/components/ui/icons";
 import { signOutAction } from "@/lib/auth/actions";
 import { limparCachePrivada } from "@/lib/workout/cache-privada";
 import type { Locale } from "@/lib/i18n/config";
@@ -16,6 +16,7 @@ const LINKS = [
   { key: "", label: "Visão geral", Icon: Chart },
   { key: "exercicios", label: "Exercícios", Icon: Bolt },
   { key: "utilizadores", label: "Utilizadores", Icon: Users },
+  { key: "comunidade", label: "Comunidade", Icon: Alert },
 ] as const;
 
 export function AdminShell({

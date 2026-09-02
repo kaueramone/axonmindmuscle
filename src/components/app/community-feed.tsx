@@ -1,7 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { Avatar } from "@/components/app/avatar";
+import { WorkoutCard } from "@/components/app/workout-card";
 import { Button } from "@/components/ui/button";
 import { Alert, Badge, Card } from "@/components/ui/surface";
 import { Bolt, Trash } from "@/components/ui/icons";
@@ -12,7 +15,9 @@ import {
 } from "@/lib/community/actions";
 import type { MediaView, PostView } from "@/lib/community/shared";
 import { t } from "@/lib/i18n/interpolate";
+import type { Locale } from "@/lib/i18n/config";
 import type { Dict } from "@/lib/i18n/types";
+import { profileRoute } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
 type Copy = Dict["app"]["community"];
@@ -27,11 +32,15 @@ const MOTIVOS = [
 export function CommunityFeed({
   posts,
   copy,
+  states,
+  locale,
   intlLocale,
   agoraISO,
 }: {
   posts: PostView[];
   copy: Copy;
+  states: Dict["readiness"]["states"];
+  locale: Locale;
   intlLocale: string;
   /** O relógio do servidor. Ver a nota em `Quando`. */
   agoraISO: string;
@@ -45,6 +54,8 @@ export function CommunityFeed({
           key={p.id}
           post={p}
           copy={copy}
+          states={states}
+          locale={locale}
           intlLocale={intlLocale}
           agoraISO={agoraISO}
         />
@@ -56,11 +67,15 @@ export function CommunityFeed({
 function PostCard({
   post,
   copy,
+  states,
+  locale,
   intlLocale,
   agoraISO,
 }: {
   post: PostView;
   copy: Copy;
+  states: Dict["readiness"]["states"];
+  locale: Locale;
   intlLocale: string;
   agoraISO: string;
 }) {
@@ -103,11 +118,42 @@ function PostCard({
   return (
     <Card as="article" className="flex flex-col gap-3">
       <div className="flex items-start gap-3">
-        <Avatar nome={post.autor.nome} url={post.autor.avatarUrl} />
+        {/* O nome e o avatar levam à página da pessoa. É a porta de entrada
+            do perfil público; sem handle (perfil incompleto) não há página. */}
+        {post.autor.handle ? (
+          <Link
+            href={profileRoute(locale, post.autor.handle)}
+            aria-label={post.autor.nome}
+            className="shrink-0 rounded-full"
+          >
+            <Avatar
+              nome={post.autor.nome}
+              url={post.autor.avatarUrl}
+              kind={post.autor.avatarKind}
+              seed={post.autor.avatarSeed}
+            />
+          </Link>
+        ) : (
+          <Avatar
+            nome={post.autor.nome}
+            url={post.autor.avatarUrl}
+            kind={post.autor.avatarKind}
+            seed={post.autor.avatarSeed}
+          />
+        )}
 
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex flex-wrap items-baseline gap-x-2">
-            <span className="truncate text-headline text-fg">{post.autor.nome}</span>
+            {post.autor.handle ? (
+              <Link
+                href={profileRoute(locale, post.autor.handle)}
+                className="truncate text-headline text-fg hover:underline"
+              >
+                {post.autor.nome}
+              </Link>
+            ) : (
+              <span className="truncate text-headline text-fg">{post.autor.nome}</span>
+            )}
             {post.autor.handle ? (
               <span className="truncate text-caption text-fg-subtle">
                 @{post.autor.handle}
@@ -118,13 +164,17 @@ function PostCard({
             </span>
           </div>
 
-          <p className="mt-1.5 whitespace-pre-wrap text-callout leading-relaxed text-fg [text-wrap:pretty]">
-            {post.body}
-          </p>
+          {post.body ? (
+            <p className="mt-1.5 whitespace-pre-wrap text-callout leading-relaxed text-fg [text-wrap:pretty]">
+              {post.body}
+            </p>
+          ) : null}
 
           {post.media ? <Media media={post.media} copy={copy} /> : null}
 
-          {post.doTreino ? (
+          {post.treino ? (
+            <WorkoutCard resumo={post.treino} copy={copy} states={states} />
+          ) : post.doTreino ? (
             <span className="mt-2 self-start">
               <Badge tone="accent">{copy.fromWorkout}</Badge>
             </span>
@@ -247,30 +297,6 @@ function Media({ media, copy }: { media: MediaView; copy: Copy }) {
         className="size-full bg-bg-sunken object-cover"
       />
     </a>
-  );
-}
-
-/** Sem fotografia, a inicial. Nunca um espaço vazio onde devia estar alguém. */
-function Avatar({ nome, url }: { nome: string; url: string | null }) {
-  if (url) {
-    // Não passa por next/image de propósito: é uma miniatura de 40px vinda do
-    // Storage, e uma optimização por avatar visível encarecia o feed inteiro
-    // para poupar bytes que já são poucos.
-    return (
-      <img
-        src={url}
-        alt=""
-        width={40}
-        height={40}
-        loading="lazy"
-        className="size-10 shrink-0 rounded-full object-cover"
-      />
-    );
-  }
-  return (
-    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-soft text-headline text-accent">
-      {nome.replace("@", "").charAt(0).toUpperCase()}
-    </span>
   );
 }
 

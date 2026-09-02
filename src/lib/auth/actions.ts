@@ -263,6 +263,16 @@ export async function updateProfileAction(
   const experience = String(formData.get("experience") ?? "");
   const birthDate = String(formData.get("birth_date") ?? "").trim();
 
+  // Comunidade: academia, bio, avatar e os interruptores de privacidade.
+  // Uma caixa desmarcada não vem no FormData, por isso ausência = false —
+  // e é assim que "privado por omissão" se mantém quando o ecrã é antigo.
+  const gym = String(formData.get("gym") ?? "").trim().slice(0, 60);
+  const bio = String(formData.get("bio") ?? "").trim().slice(0, 160);
+  const avatarKind = String(formData.get("avatar_kind") ?? "photo") === "generated" ? "generated" : "photo";
+  const seedBruta = String(formData.get("avatar_seed") ?? "").trim().toLowerCase();
+  const avatarSeed = /^[a-z0-9-]{1,40}$/.test(seedBruta) ? seedBruta : null;
+  const ligado = (chave: string) => formData.get(chave) === "on";
+
   const { error } = await supabase
     .from("profiles")
     .update({
@@ -275,6 +285,14 @@ export async function updateProfileAction(
       height_cm: optionalNumber(formData.get("height_cm")),
       weight_kg: optionalNumber(formData.get("weight_kg")),
       birth_date: birthDate || null,
+      gym: gym || null,
+      bio: bio || null,
+      avatar_kind: avatarKind,
+      avatar_seed: avatarKind === "generated" ? (avatarSeed ?? user.id.slice(0, 8)) : avatarSeed,
+      is_private: ligado("is_private"),
+      show_stats: ligado("show_stats"),
+      show_records: ligado("show_records"),
+      show_readiness: ligado("show_readiness"),
     })
     .eq("id", user.id);
 

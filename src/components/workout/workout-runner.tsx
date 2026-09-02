@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AxonRunner } from "@/components/workout/axon-runner";
 import { ExerciseBrief } from "@/components/workout/exercise-brief";
 import { SaveRoutine } from "@/components/workout/save-routine";
+import { ShareWorkout } from "@/components/workout/share-workout";
 import {
   ExercisePicker,
   type ExerciseOption,
@@ -151,6 +152,7 @@ export function WorkoutRunner({
   readiness,
   lastByExercise,
   routineId,
+  plan,
 }: {
   locale: Locale;
   dict: Dict;
@@ -162,6 +164,8 @@ export function WorkoutRunner({
   lastByExercise: Record<string, LastPerformance>;
   /** A rotina que esta sessão repete, quando veio de uma. */
   routineId: string | null;
+  /** Escrever no mural é do PRO; a pergunta de partilha respeita-o. */
+  plan: "free" | "pro";
 }) {
   const copy = dict.workout;
 
@@ -1167,6 +1171,17 @@ export function WorkoutRunner({
               pessoa tem a lista toda fresca e sabe que aquilo resultou. */}
           {sessionId && !routineId ? (
             <SaveRoutine sessionId={sessionId} copy={copy.routines} />
+          ) : null}
+
+          {/* Perguntada aqui, e não automática. Só quando houve séries: um
+              treino vazio não é um treino para partilhar. */}
+          {sessionId && logged.length > 0 ? (
+            <ShareWorkout
+              sessionId={sessionId}
+              plan={plan}
+              locale={locale}
+              copy={dict.app.community}
+            />
           ) : null}
 
           <ButtonLink

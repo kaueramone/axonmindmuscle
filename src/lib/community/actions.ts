@@ -2,9 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 
-import { LIMITE_CARACTERES } from "@/lib/community/shared";
+import {
+  LIMITE_CARACTERES,
+  type ShareChoices,
+  type WorkoutSummary,
+} from "@/lib/community/shared";
 import { createClient } from "@/lib/supabase/server";
-import type { ReportReason } from "@/lib/supabase/types";
+import type { Json, ReportReason } from "@/lib/supabase/types";
 
 /**
  * As acções da comunidade devolvem sempre uma chave curta e nunca uma frase: é
@@ -218,7 +222,7 @@ async function guardarMencoes(supabase: Cliente, postId: string, corpo: string) 
   if (unicos.length === 0) return;
 
   const { data: perfis } = await supabase
-    .from("profiles")
+    .from("perfis_publicos")
     .select("id, handle")
     .in("handle", unicos);
 
@@ -256,4 +260,138 @@ function lerMedia(formData: FormData): {
   if (largura < 1 || altura < 1) return null;
 
   return { kind: "image", path, previewPath, largura, altura };
+}
+
+/* -------------------------------------------------------------------------
+ * Partilhar o treino no fim da sessão.
+ * ---------------------------------------------------------------------- */
+
+/**
+ * O resumo da sessão, para o ecrã mostrar o que há para escolher. Calculado
+ * na base de dados com as permissões de quem chama — uma sessão alheia
+ * devolve nada.
+ */
+export async function resumoSessaoAction(
+  sessionId: string,
+): Promise<WorkoutSummary | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase.rpc("resumo_sessao", { p_session: sessionId });
+  if (error || !data || typeof data !== "object") return null;
+  return data as unknown as WorkoutSummary;
+}
+
+/**
+ * Publica o treino com as partes escolhidas. O resumo é recalculado aqui e
+ * filtrado pelas caixas: o browser diz o que quer mostrar, nunca o que os
+ * números são. O post guarda a cópia; a sessão pode ser apagada depois sem
+ * que o post mude.
+ */
+export async function partilharTreinoAction(input: {
+  sessionId: string;
+  body: string;
+  choices: ShareChoices;
+}): Promise<ComunidadeResult> {
+  const corpo = String(input?.body ?? "").trim();
+  if (corpo.length > LIMITE_CARACTERES) return { ok: false, error: "longo" };
+
+  const escolhas: ShareChoices = {
+    exercises: Boolean(input?.choices?.exercises),
+    totals: Boolean(input?.choices?.totals),
+    records: Boolean(input?.choices?.records),
+    readiness: Boolean(input?.choices?.readiness),
+  };
+  if (!escolhas.exercises && !escolhas.totals && !escolhas.records && !escolhas.readiness) {
+    return { ok: false, error: "vazio" };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "sessao" };
+
+  const limite = await consumir(supabase, "publicar");
+  if (limite) return limite;
+
+  const { data: bruto, error: erroResumo } = await supabase.rpc("resumo_sessao", {
+    p_session: String(input.sessionId),
+  });
+  if (erroResumo || !bruto || typeof bruto !== "object") {
+    return { ok: false, error: "generico" };
+  }
+  const completo = bruto as unknown as WorkoutSummary;
+
+  const resumo: WorkoutSummary = { v: 1 };
+  if (escolhas.totals) {
+    resumo.duration_min = completo.duration_min;
+    resumo.volume_kg = completo.volume_kg;
+    resumo.sets = completo.sets;
+  }
+  if (escolhas.exercises) resumo.exercises = completo.exercises ?? [];
+  if (escolhas.records && completo.records && completo.records.length > 0) {
+    resumo.records = completo.records;
+  }
+  if (escolhas.readiness && completo.readiness) resumo.readiness = completo.readiness;
+
+  const { data: post, error } = await supabase
+    .from("posts")
+    .insert({
+      author_id: user.id,
+      body: corpo,
+      workout_session_id: String(input.sessionId),
+      workout_summary: resumo as unknown as Json,
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    if (error.code === "42501") return { ok: false, error: "plano" };
+    console.error("[comunidade] falha a partilhar treino:", error.message);
+    return { ok: false, error: "generico" };
+  }
+
+  if (corpo) await guardarMencoes(supabase, post.id, corpo);
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/* -------------------------------------------------------------------------
+ * Seguir.
+ * ---------------------------------------------------------------------- */
+
+export async function alternarSeguirAction(
+  userId: string,
+  seguir: boolean,
+): Promise<ComunidadeResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "sessao" };
+  if (userId === user.id) return { ok: false, error: "generico" };
+
+  const limite = await consumir(supabase, "reagir");
+  if (limite) return limite;
+
+  const { error } = seguir
+    ? await supabase.from("follows").insert({ follower_id: user.id, following_id: userId })
+    : await supabase
+        .from("follows")
+        .delete()
+        .eq("follower_id", user.id)
+        .eq("following_id", userId);
+
+  if (error && error.code !== "23505") {
+    console.error("[comunidade] falha a seguir:", error.message);
+    return { ok: false, error: "generico" };
+  }
+
+  revalidatePath("/", "layout");
+  return { ok: true };
 }

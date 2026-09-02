@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 
 import { AvatarField } from "@/components/app/avatar-field";
+import { CommunitySettings } from "@/components/app/community-settings";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Alert as AlertIcon, Check } from "@/components/ui/icons";
@@ -15,6 +16,7 @@ import {
   updateProfileAction,
   type ActionResult,
 } from "@/lib/auth/actions";
+import type { Locale } from "@/lib/i18n/config";
 import type { Dict } from "@/lib/i18n/types";
 import { limparCachePrivada } from "@/lib/workout/cache-privada";
 import type { ExperienceLevel, Profile, TrainingGoal } from "@/lib/supabase/types";
@@ -37,7 +39,7 @@ export function ProfileForm({
 }: {
   profile: Profile;
   dict: Dict;
-  locale: string;
+  locale: Locale;
 }) {
   const copy = dict.app.profile;
   const onboarding = dict.onboarding.steps;
@@ -205,7 +207,9 @@ export function ProfileForm({
           />
         </Card>
 
-          <SubmitButton label={dict.common.save} savingLabel={dict.common.saving} />
+        <CommunitySettings profile={profile} copy={copy} locale={locale} />
+
+        <SubmitButton label={dict.common.save} savingLabel={dict.common.saving} />
       </form>
 
       <ListGroup>

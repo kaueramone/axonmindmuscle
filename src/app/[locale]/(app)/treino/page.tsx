@@ -76,7 +76,7 @@ export default async function WorkoutPage({
   // Prontidão de hoje: ajusta os valores de partida do treino.
   const { data: perfil } = await supabase
     .from("profiles")
-    .select("timezone")
+    .select("timezone, plan")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -167,6 +167,7 @@ export default async function WorkoutPage({
           readiness={readiness}
           lastByExercise={lastByExercise}
           routineId={routineId}
+          plan={perfil?.plan ?? "free"}
         />
       </div>
     </>

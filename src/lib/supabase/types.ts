@@ -348,6 +348,14 @@ export type Database = {
           pro_granted_at: string | null;
           pro_granted_by: string | null;
           readiness_consent_at: string | null;
+          is_private: boolean;
+          show_stats: boolean;
+          show_records: boolean;
+          show_readiness: boolean;
+          gym: string | null;
+          bio: string | null;
+          avatar_kind: "photo" | "generated";
+          avatar_seed: string | null;
           plan: Database["public"]["Enums"]["user_plan"];
           role: Database["public"]["Enums"]["user_role"];
           stripe_customer_id: string | null;
@@ -381,6 +389,15 @@ export type Database = {
           updated_at?: string;
           weekly_frequency?: number | null;
           weight_kg?: number | null;
+          readiness_consent_at?: string | null;
+          is_private?: boolean;
+          show_stats?: boolean;
+          show_records?: boolean;
+          show_readiness?: boolean;
+          gym?: string | null;
+          bio?: string | null;
+          avatar_kind?: "photo" | "generated";
+          avatar_seed?: string | null;
         };
         Update: {
           avatar_url?: string | null;
@@ -406,6 +423,15 @@ export type Database = {
           updated_at?: string;
           weekly_frequency?: number | null;
           weight_kg?: number | null;
+          readiness_consent_at?: string | null;
+          is_private?: boolean;
+          show_stats?: boolean;
+          show_records?: boolean;
+          show_readiness?: boolean;
+          gym?: string | null;
+          bio?: string | null;
+          avatar_kind?: "photo" | "generated";
+          avatar_seed?: string | null;
         };
         Relationships: [];
       };
@@ -432,6 +458,7 @@ export type Database = {
           repost_of: string | null;
           root_id: string | null;
           workout_session_id: string | null;
+          workout_summary: Json | null;
         };
         Insert: {
           author_id: string;
@@ -455,6 +482,7 @@ export type Database = {
           repost_of?: string | null;
           root_id?: string | null;
           workout_session_id?: string | null;
+          workout_summary?: Json | null;
         };
         Update: Partial<Database["public"]["Tables"]["posts"]["Insert"]>;
         Relationships: [];
@@ -525,6 +553,21 @@ export type Database = {
       };
     };
     Views: {
+      perfis_publicos: {
+        Row: {
+          id: string;
+          handle: string | null;
+          display_name: string | null;
+          avatar_url: string | null;
+          avatar_kind: "photo" | "generated";
+          avatar_seed: string | null;
+          is_private: boolean;
+          follower_count: number;
+          following_count: number;
+          created_at: string;
+        };
+        Relationships: [];
+      };
       workout_sets_local: {
         Row: {
           completed_at: string;
@@ -612,6 +655,10 @@ export type Database = {
         Args: Record<string, never>;
         Returns: undefined;
       };
+      admin_ocultar_post: {
+        Args: { p_post: string; p_esconder: boolean };
+        Returns: undefined;
+      };
       admin_set_pro: {
         Args: { p_user: string; p_grant: boolean };
         Returns: undefined;
@@ -685,6 +732,18 @@ export type Database = {
       apagar_registos_exercicio: {
         Args: { p_exercise_id: string | null; p_exercise_name: string };
         Returns: { sets_apagados: number; sessoes_apagadas: number }[];
+      };
+      perfil_publico: {
+        Args: { p_handle: string };
+        Returns: Json;
+      };
+      resumo_sessao: {
+        Args: { p_session: string };
+        Returns: Json;
+      };
+      admin_academias: {
+        Args: Record<string, never>;
+        Returns: { gym: string; membros: number }[];
       };
       readiness_context: {
         Args: Record<string, never>;

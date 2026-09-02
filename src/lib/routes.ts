@@ -31,6 +31,14 @@ export function route(locale: Locale, key: RouteKey): string {
 }
 
 /**
+ * A página pública de uma pessoa: `/pt-pt/comunidade/@handle`. O @ no URL é
+ * o que distingue um perfil de qualquer sub-rota futura da comunidade.
+ */
+export function profileRoute(locale: Locale, handle: string): string {
+  return `/${locale}/${segments.community}/@${encodeURIComponent(handle)}`;
+}
+
+/**
  * Valida um destino que veio de fora — query string, formulário, email.
  *
  * Só caminhos internos passam. Um `next` aceite em cru é um redirecionamento

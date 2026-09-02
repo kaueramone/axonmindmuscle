@@ -209,3 +209,40 @@ export async function setUserRoleAction(
   revalidatePath("/", "layout");
   return { ok: true, id: userId };
 }
+
+/* -------------------------------------------------------------------------
+ * Moderação da comunidade.
+ * ---------------------------------------------------------------------- */
+
+/**
+ * Esconde (ou volta a mostrar) um post e dá as denúncias dele por resolvidas.
+ * Passa pela função `admin_ocultar_post`, que verifica o papel e deixa rasto
+ * de quem decidiu; as denúncias ficam com a data e o administrador.
+ */
+export async function moderatePostAction(
+  postId: string,
+  decisao: "esconder" | "mostrar" | "ignorar",
+): Promise<Resultado> {
+  const { supabase, isAdmin, user } = await admin();
+  if (!isAdmin || !user) return { ok: false, error: "Sem permissão." };
+
+  if (decisao !== "ignorar") {
+    const { error } = await supabase.rpc("admin_ocultar_post", {
+      p_post: postId,
+      p_esconder: decisao === "esconder",
+    });
+    if (error) return { ok: false, error: error.message };
+  }
+
+  if (decisao !== "mostrar") {
+    const { error } = await supabase
+      .from("post_reports")
+      .update({ resolved_at: new Date().toISOString(), resolved_by: user.id })
+      .eq("post_id", postId)
+      .is("resolved_at", null);
+    if (error) return { ok: false, error: error.message };
+  }
+
+  revalidatePath("/", "layout");
+  return { ok: true, id: postId };
+}

@@ -25,6 +25,8 @@ export type AutorView = {
   nome: string;
   handle: string | null;
   avatarUrl: string | null;
+  avatarKind: "photo" | "generated";
+  avatarSeed: string | null;
 };
 
 export type MediaView = {
@@ -35,6 +37,35 @@ export type MediaView = {
   fullUrl: string;
   largura: number;
   altura: number;
+};
+
+/**
+ * O resumo de treino guardado dentro do post. Uma cópia do que a pessoa
+ * marcou no momento de partilhar: não muda se o treino for apagado depois e
+ * nunca contém mais do que foi marcado.
+ */
+export type WorkoutSummary = {
+  v: 1;
+  duration_min?: number;
+  volume_kg?: number;
+  sets?: number;
+  exercises?: {
+    name: string;
+    sets: number;
+    best_weight_kg: number | null;
+    best_reps: number | null;
+    duration_s: number;
+  }[];
+  records?: { name: string; weight_kg: number; reps: number | null }[];
+  readiness?: { score: number; state: "strong" | "moderate" | "rest" };
+};
+
+/** As partes do resumo que a pessoa pode escolher partilhar. */
+export type ShareChoices = {
+  exercises: boolean;
+  totals: boolean;
+  records: boolean;
+  readiness: boolean;
 };
 
 export type PostView = {
@@ -50,4 +81,6 @@ export type PostView = {
   /** Ligado a um treino: o cartão mostra a proveniência. */
   doTreino: boolean;
   media: MediaView | null;
+  /** O treino partilhado, quando o post nasceu no fim de uma sessão. */
+  treino: WorkoutSummary | null;
 };

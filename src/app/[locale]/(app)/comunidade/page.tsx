@@ -81,6 +81,8 @@ export default async function CommunityPage({
           <CommunityFeed
             posts={posts}
             copy={copy}
+            states={dict.readiness.states}
+            locale={locale}
             intlLocale={marketByLocale[locale].intl}
             agoraISO={new Date().toISOString()}
           />

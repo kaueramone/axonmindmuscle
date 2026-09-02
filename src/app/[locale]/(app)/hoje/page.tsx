@@ -6,7 +6,7 @@ import Link from "next/link";
 import { AppHeader } from "@/components/app/app-header";
 import { Greeting } from "@/components/app/greeting";
 import { ReadinessSummary } from "@/components/app/readiness-summary";
-import { Bolt, ChevronRight, Sparkle, Users } from "@/components/ui/icons";
+import { Bolt, ChevronRight, Sparkle } from "@/components/ui/icons";
 import { ButtonLink } from "@/components/ui/button";
 import { Badge, Card, ListGroup, ListRow } from "@/components/ui/surface";
 import { route } from "@/lib/routes";
@@ -64,9 +64,10 @@ export default async function TodayPage({
   const firstName = profile?.display_name?.split(" ")[0] ?? "";
   const ehPro = profile?.plan === "pro";
 
+  // A comunidade já existe e tem o seu separador; o que continua a caminho é
+  // só o assistente.
   const tools = [
     { icon: <Sparkle className="size-4.5" />, ...pick(copy.tools, "assistant") },
-    { icon: <Users className="size-4.5" />, ...pick(copy.tools, "community") },
   ];
 
   return (
