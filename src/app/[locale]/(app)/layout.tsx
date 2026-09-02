@@ -2,6 +2,7 @@ import { assertLocale } from "@/lib/i18n/config";
 import { redirect } from "next/navigation";
 
 import { TabBar } from "@/components/app/tab-bar";
+import { contarNaoLidas } from "@/lib/community/feed";
 import { getDictionary } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n/config";
 import { route } from "@/lib/routes";
@@ -34,11 +35,16 @@ export default async function AppLayout({
 
   if (!profile?.onboarding_completed_at) redirect(route(locale, "onboarding"));
 
+  // Um ponto no separador da comunidade quando há notificações por ler. É
+  // uma contagem barata (índice parcial) e evita o polling do lado do cliente.
+  const naoLidas = await contarNaoLidas(supabase, user.id);
+
   return (
     <div className="min-h-dvh pb-24">
       {children}
       <TabBar
         locale={locale}
+        badge={naoLidas > 0}
         labels={{
           today: dict.nav.today,
           progress: dict.nav.progress,

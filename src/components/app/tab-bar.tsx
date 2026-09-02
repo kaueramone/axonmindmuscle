@@ -17,9 +17,12 @@ type Tab = { key: RouteKey; label: string; Icon: typeof Bolt };
 export function TabBar({
   locale,
   labels,
+  badge = false,
 }: {
   locale: Locale;
   labels: { today: string; progress: string; community: string; profile: string };
+  /** Notificações por ler: um ponto no separador da comunidade. */
+  badge?: boolean;
 }) {
   const pathname = usePathname();
 
@@ -50,12 +53,20 @@ export function TabBar({
                   active ? "text-accent" : "text-fg-subtle hover:text-fg-muted",
                 )}
               >
-                <Icon
-                  className={cn(
-                    "size-6 transition-transform duration-300 [transition-timing-function:var(--ease-spring)]",
-                    active && "scale-110",
-                  )}
-                />
+                <span className="relative">
+                  <Icon
+                    className={cn(
+                      "size-6 transition-transform duration-300 [transition-timing-function:var(--ease-spring)]",
+                      active && "scale-110",
+                    )}
+                  />
+                  {badge && key === "community" ? (
+                    <span
+                      className="absolute -right-1 -top-0.5 size-2 rounded-full bg-accent ring-2 ring-[var(--bg)]"
+                      aria-hidden
+                    />
+                  ) : null}
+                </span>
                 <span className="text-caption2 font-medium">{label}</span>
               </Link>
             </li>

@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { AppHeader } from "@/components/app/app-header";
 import { CommunityFeed } from "@/components/app/community-feed";
 import { PostComposer } from "@/components/app/post-composer";
+import { Bell } from "@/components/ui/icons";
 import { Card } from "@/components/ui/surface";
-import { lerFeed, lerOnline } from "@/lib/community/feed";
+import { contarNaoLidas, lerFeed, lerOnline } from "@/lib/community/feed";
 import { getDictionary } from "@/lib/i18n";
 import { assertLocale, marketByLocale } from "@/lib/i18n/config";
 import { route } from "@/lib/routes";
@@ -37,10 +39,11 @@ export default async function CommunityPage({
   // sem uma única ligação permanente aberta.
   await supabase.rpc("tocar_presenca");
 
-  const [posts, online, { data: podePublicar }] = await Promise.all([
+  const [posts, online, { data: podePublicar }, naoLidas] = await Promise.all([
     lerFeed(supabase, user.id),
     lerOnline(supabase),
     supabase.rpc("pode_publicar"),
+    contarNaoLidas(supabase, user.id),
   ]);
 
   return (
@@ -54,6 +57,20 @@ export default async function CommunityPage({
           dark: dict.app.account.appearanceDark,
         }}
         eyebrow={dict.common.tagline}
+        action={
+          <Link
+            href={route(locale, "notifications")}
+            aria-label={dict.app.notifications.open}
+            className="relative grid size-9 shrink-0 place-items-center rounded-full border border-hairline bg-surface text-fg-muted transition-colors hover:text-fg"
+          >
+            <Bell className="size-4.5" />
+            {naoLidas > 0 ? (
+              <span className="absolute -right-0.5 -top-0.5 grid min-w-4 place-items-center rounded-full bg-accent px-1 text-[10px] font-semibold leading-4 text-accent-fg">
+                {naoLidas > 9 ? "9+" : naoLidas}
+              </span>
+            ) : null}
+          </Link>
+        }
       />
 
       <div className="mx-auto flex max-w-2xl flex-col gap-6 px-5 pt-6">

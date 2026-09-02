@@ -288,6 +288,24 @@ export function Trash(props: IconProps) {
   );
 }
 
+export function Reply(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M20 18.5c0-4.5-3-7.5-8-7.5H5.5" />
+      <path d="M9.5 7 5.5 11l4 4" />
+    </Icon>
+  );
+}
+
+export function Bell(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M6.5 16.5V11a5.5 5.5 0 0 1 11 0v5.5l1.5 1.5H5l1.5-1.5Z" />
+      <path d="M10 20a2 2 0 0 0 4 0" />
+    </Icon>
+  );
+}
+
 export function Upload(props: IconProps) {
   return (
     <Icon {...props}>

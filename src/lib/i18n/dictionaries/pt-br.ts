@@ -633,6 +633,11 @@ const dictionary: Dict = {
       shareProOnly: "Compartilhar no mural é do plano PRO.",
       shareOffline: "Sem rede. Compartilhe mais tarde a partir do mural.",
       errorChoices: "Marque pelo menos uma coisa para compartilhar.",
+      replyingTo: "respondendo a",
+      reply: "Responder",
+      replyPlaceholder: "Sua resposta",
+      threadTitle: "Conversa",
+      noReplies: "Ainda ninguém respondeu.",
     },
     week: {
       title: "Minha semana",
@@ -702,6 +707,19 @@ const dictionary: Dict = {
       optInLink: "Ligar no perfil",
       rankingOptIn: "Aparecer no ranking de consistência",
       rankingOptInHint: "Quem segue você vê suas sessões do mês numa lista. Nunca cargas.",
+    },
+    notifications: {
+      title: "Notificações",
+      empty: "Ainda nada. Quando alguém apoiar, responder, mencionar ou seguir você, aparece aqui.",
+      open: "Notificações",
+      unread: "{n} não lidas",
+      kinds: {
+        gosto: "{name} apoiou sua publicação",
+        resposta: "{name} respondeu a você",
+        mencao: "{name} mencionou você",
+        republicacao: "{name} republicou sua publicação",
+        seguidor: "{name} começou a seguir você",
+      },
     },
     publicProfile: {
       follow: "Seguir",

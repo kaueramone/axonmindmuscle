@@ -395,3 +395,71 @@ export async function alternarSeguirAction(
   revalidatePath("/", "layout");
   return { ok: true };
 }
+
+/* -------------------------------------------------------------------------
+ * Responder.
+ * ---------------------------------------------------------------------- */
+
+/**
+ * Uma resposta é um post com `reply_to`; o `root_id` é escrito pelo gatilho
+ * e a notificação ao autor do pai também. Mesma regra de escrita do mural
+ * (PRO), mesmo limite de caracteres, mesmas menções.
+ */
+export async function responderAction(
+  postId: string,
+  body: string,
+): Promise<ComunidadeResult> {
+  const corpo = String(body ?? "").trim();
+  if (corpo.length === 0) return { ok: false, error: "vazio" };
+  if (corpo.length > LIMITE_CARACTERES) return { ok: false, error: "longo" };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "sessao" };
+
+  const limite = await consumir(supabase, "publicar");
+  if (limite) return limite;
+
+  const { data: post, error } = await supabase
+    .from("posts")
+    .insert({ author_id: user.id, body: corpo, reply_to: String(postId) })
+    .select("id")
+    .single();
+
+  if (error) {
+    if (error.code === "42501") return { ok: false, error: "plano" };
+    // Chave estrangeira em falta: o pai já não existe ou não é visível.
+    if (error.code === "23503") return { ok: false, error: "generico" };
+    console.error("[comunidade] falha a responder:", error.message);
+    return { ok: false, error: "generico" };
+  }
+
+  await guardarMencoes(supabase, post.id, corpo);
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/* -------------------------------------------------------------------------
+ * Notificações.
+ * ---------------------------------------------------------------------- */
+
+/** Marca tudo como lido. Chamada ao abrir a página; ler é o que as lê. */
+export async function marcarNotificacoesLidasAction(): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { error } = await supabase
+    .from("notifications")
+    .update({ read_at: new Date().toISOString() })
+    .eq("user_id", user.id)
+    .is("read_at", null);
+  if (error) console.error("[comunidade] falha a marcar lidas:", error.message);
+
+  revalidatePath("/", "layout");
+}

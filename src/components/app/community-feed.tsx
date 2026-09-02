@@ -4,10 +4,11 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { Avatar } from "@/components/app/avatar";
+import { MentionText } from "@/components/app/mention-text";
 import { WorkoutCard } from "@/components/app/workout-card";
 import { Button } from "@/components/ui/button";
 import { Alert, Badge, Card } from "@/components/ui/surface";
-import { Bolt, Trash } from "@/components/ui/icons";
+import { Bolt, Reply, Trash } from "@/components/ui/icons";
 import {
   alternarGostoAction,
   apagarPostAction,
@@ -17,7 +18,7 @@ import type { MediaView, PostView } from "@/lib/community/shared";
 import { t } from "@/lib/i18n/interpolate";
 import type { Locale } from "@/lib/i18n/config";
 import type { Dict } from "@/lib/i18n/types";
-import { profileRoute } from "@/lib/routes";
+import { postRoute, profileRoute } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
 type Copy = Dict["app"]["community"];
@@ -164,9 +165,21 @@ function PostCard({
             </span>
           </div>
 
+          {post.replyToHandle ? (
+            <p className="mt-0.5 text-caption text-fg-subtle">
+              {copy.replyingTo}{" "}
+              <Link
+                href={profileRoute(locale, post.replyToHandle)}
+                className="text-accent hover:underline"
+              >
+                @{post.replyToHandle}
+              </Link>
+            </p>
+          ) : null}
+
           {post.body ? (
             <p className="mt-1.5 whitespace-pre-wrap text-callout leading-relaxed text-fg [text-wrap:pretty]">
-              {post.body}
+              <MentionText text={post.body} locale={locale} />
             </p>
           ) : null}
 
@@ -197,11 +210,16 @@ function PostCard({
           <span className="sr-only">{copy.like}</span>
         </button>
 
-        {post.replyCount > 0 ? (
-          <span className="px-2 py-1 text-caption text-fg-subtle">
-            {t(copy.replies, { n: String(post.replyCount) })}
-          </span>
-        ) : null}
+        {/* Responder e ver as respostas levam ao fio; o cartão do mural
+            não cresce para baixo. */}
+        <Link
+          href={postRoute(locale, post.id)}
+          className="flex items-center gap-1.5 rounded-md px-2 py-1 text-caption text-fg-subtle transition-colors hover:text-fg-muted"
+        >
+          <Reply className="size-4" />
+          <span className="data-mono">{post.replyCount > 0 ? post.replyCount : ""}</span>
+          <span className="sr-only">{t(copy.replies, { n: String(post.replyCount) })}</span>
+        </Link>
 
         <span className="flex-1" />
 

@@ -634,6 +634,11 @@ const dictionary = {
       shareProOnly: "Partilhar no mural é do plano PRO.",
       shareOffline: "Sem rede. Partilha mais tarde a partir do mural.",
       errorChoices: "Marca pelo menos uma coisa para partilhar.",
+      replyingTo: "a responder a",
+      reply: "Responder",
+      replyPlaceholder: "A tua resposta",
+      threadTitle: "Conversa",
+      noReplies: "Ainda ninguém respondeu.",
     },
     week: {
       title: "A minha semana",
@@ -703,6 +708,19 @@ const dictionary = {
       optInLink: "Ligar no perfil",
       rankingOptIn: "Aparecer no ranking de consistência",
       rankingOptInHint: "Quem te segue vê as tuas sessões do mês numa lista. Nunca cargas.",
+    },
+    notifications: {
+      title: "Notificações",
+      empty: "Ainda nada. Quando alguém apoiar, responder, te mencionar ou te seguir, aparece aqui.",
+      open: "Notificações",
+      unread: "{n} por ler",
+      kinds: {
+        gosto: "{name} apoiou a tua publicação",
+        resposta: "{name} respondeu-te",
+        mencao: "{name} mencionou-te",
+        republicacao: "{name} republicou a tua publicação",
+        seguidor: "{name} começou a seguir-te",
+      },
     },
     publicProfile: {
       follow: "Seguir",

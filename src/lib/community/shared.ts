@@ -83,4 +83,20 @@ export type PostView = {
   media: MediaView | null;
   /** O treino partilhado, quando o post nasceu no fim de uma sessão. */
   treino: WorkoutSummary | null;
+  /** O pai direto, quando é uma resposta; e o topo do fio. */
+  replyTo: string | null;
+  rootId: string | null;
+  /** A quem responde, para o cartão dizer "a responder a @fulano". */
+  replyToHandle: string | null;
+};
+
+export type NotificacaoView = {
+  id: string;
+  tipo: "gosto" | "resposta" | "mencao" | "republicacao" | "seguidor";
+  createdAt: string;
+  lida: boolean;
+  ator: AutorView | null;
+  /** O post a que diz respeito, quando ainda está visível. */
+  postId: string | null;
+  excerto: string | null;
 };

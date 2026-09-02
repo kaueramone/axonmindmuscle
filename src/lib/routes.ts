@@ -13,6 +13,7 @@ export const segments = {
   workout: "treino",
   week: "semana",
   photos: "fotos",
+  notifications: "notificacoes",
   readiness: "prontidao",
   progress: "progresso",
   community: "comunidade",
@@ -38,6 +39,11 @@ export function route(locale: Locale, key: RouteKey): string {
  */
 export function profileRoute(locale: Locale, handle: string): string {
   return `/${locale}/${segments.community}/@${encodeURIComponent(handle)}`;
+}
+
+/** A página de um fio: `/pt-pt/comunidade/post/<id>`. */
+export function postRoute(locale: Locale, id: string): string {
+  return `/${locale}/${segments.community}/post/${encodeURIComponent(id)}`;
 }
 
 /**
@@ -91,6 +97,7 @@ export const protectedSegments: string[] = [
   segments.workout,
   segments.week,
   segments.photos,
+  segments.notifications,
   segments.readiness,
   segments.progress,
   segments.community,
