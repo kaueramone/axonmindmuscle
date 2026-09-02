@@ -6,6 +6,7 @@ import { AppHeader } from "@/components/app/app-header";
 import { Avatar } from "@/components/app/avatar";
 import { CommunityFeed } from "@/components/app/community-feed";
 import { FollowButton } from "@/components/app/follow-button";
+import { Medals, type Medalha } from "@/components/app/medals";
 import { ButtonLink } from "@/components/ui/button";
 import { Lock } from "@/components/ui/icons";
 import { Badge, Card } from "@/components/ui/surface";
@@ -90,7 +91,16 @@ export default async function PublicProfilePage({
   const perfil = bruto as unknown as PerfilPublico;
 
   const nome = perfil.name?.trim() || `@${perfil.handle}`;
-  const posts = perfil.hidden ? [] : await lerPostsDoAutor(supabase, user.id, perfil.id);
+  // As medalhas seguem o interruptor das estatísticas: a função devolve
+  // vazio para quem não as mostra. Para o próprio, aparecem sempre.
+  const [posts, { data: medalhas }] = perfil.hidden
+    ? [[], { data: [] }]
+    : await Promise.all([
+        lerPostsDoAutor(supabase, user.id, perfil.id),
+        perfil.stats || perfil.is_me
+          ? supabase.rpc("medalhas", { p_user: perfil.id })
+          : Promise.resolve({ data: [] }),
+      ]);
 
   const labelsSeguir = { follow: copy.follow, unfollow: copy.unfollow };
 
@@ -215,6 +225,17 @@ export default async function PublicProfilePage({
                   {t(copy.statsLast30, { n: perfil.stats.sessions_30d })}
                 </p>
               </Secao>
+            ) : null}
+
+            {medalhas && medalhas.length > 0 ? (
+              <div className={cn(perfil.is_me && !perfil.show_stats && "opacity-80")}>
+                <Medals
+                  medalhas={medalhas as Medalha[]}
+                  copy={dict.app.medals}
+                  locale={locale}
+                  compact
+                />
+              </div>
             ) : null}
 
             {perfil.records && perfil.records.length > 0 ? (

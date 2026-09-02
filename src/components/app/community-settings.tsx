@@ -25,10 +25,12 @@ import { cn } from "@/lib/utils";
 export function CommunitySettings({
   profile,
   copy,
+  medals,
   locale,
 }: {
   profile: Profile;
   copy: Dict["app"]["profile"];
+  medals: Dict["app"]["medals"];
   locale: Locale;
 }) {
   const [kind, setKind] = useState<"photo" | "generated">(profile.avatar_kind);
@@ -44,7 +46,7 @@ export function CommunitySettings({
   }
 
   const interruptores: {
-    nome: "is_private" | "show_stats" | "show_records" | "show_readiness";
+    nome: "is_private" | "show_stats" | "show_records" | "show_readiness" | "ranking_opt_in";
     rotulo: string;
     ajuda: string;
     valor: boolean;
@@ -52,6 +54,7 @@ export function CommunitySettings({
     { nome: "show_stats", rotulo: copy.showStats, ajuda: copy.showStatsHint, valor: profile.show_stats },
     { nome: "show_records", rotulo: copy.showRecords, ajuda: copy.showRecordsHint, valor: profile.show_records },
     { nome: "show_readiness", rotulo: copy.showReadiness, ajuda: copy.showReadinessHint, valor: profile.show_readiness },
+    { nome: "ranking_opt_in", rotulo: medals.rankingOptIn, ajuda: medals.rankingOptInHint, valor: profile.ranking_opt_in },
     { nome: "is_private", rotulo: copy.isPrivate, ajuda: copy.isPrivateHint, valor: profile.is_private },
   ];
 

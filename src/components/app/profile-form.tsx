@@ -207,7 +207,7 @@ export function ProfileForm({
           />
         </Card>
 
-        <CommunitySettings profile={profile} copy={copy} locale={locale} />
+        <CommunitySettings profile={profile} copy={copy} medals={dict.app.medals} locale={locale} />
 
         <SubmitButton label={dict.common.save} savingLabel={dict.common.saving} />
       </form>

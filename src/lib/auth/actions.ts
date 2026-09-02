@@ -293,6 +293,7 @@ export async function updateProfileAction(
       show_stats: ligado("show_stats"),
       show_records: ligado("show_records"),
       show_readiness: ligado("show_readiness"),
+      ranking_opt_in: ligado("ranking_opt_in"),
     })
     .eq("id", user.id);
 

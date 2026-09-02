@@ -130,6 +130,37 @@ export async function archiveRoutineAction(id: string): Promise<RoutineResult> {
   return { ok: true };
 }
 
+/**
+ * Os dias da semana em que a rotina está planeada. 1 = segunda … 7 = domingo.
+ * Lista limpa aqui (inteiros no intervalo, sem repetidos) e verificada outra
+ * vez pela restrição da tabela.
+ */
+export async function setRoutineWeekdaysAction(
+  id: string,
+  weekdays: number[],
+): Promise<RoutineResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "sessao" };
+
+  const dias = [...new Set((Array.isArray(weekdays) ? weekdays : []).map(Number))]
+    .filter((d) => Number.isInteger(d) && d >= 1 && d <= 7)
+    .sort((a, b) => a - b);
+
+  const { error } = await supabase
+    .from("routines")
+    .update({ weekdays: dias })
+    .eq("id", String(id))
+    .eq("user_id", user.id);
+
+  if (error) return { ok: false, error: "generico" };
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
 function mediana(valores: number[]): number | null {
   if (valores.length === 0) return null;
   const ordenados = [...valores].sort((a, b) => a - b);

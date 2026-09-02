@@ -92,6 +92,7 @@ export type Database = {
           created_at: string;
           updated_at: string;
           archived_at: string | null;
+          weekdays: number[];
         };
         Insert: {
           id?: string;
@@ -100,6 +101,7 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
           archived_at?: string | null;
+          weekdays?: number[];
         };
         Update: Partial<Database["public"]["Tables"]["routines"]["Insert"]>;
         Relationships: [];
@@ -356,6 +358,7 @@ export type Database = {
           bio: string | null;
           avatar_kind: "photo" | "generated";
           avatar_seed: string | null;
+          ranking_opt_in: boolean;
           plan: Database["public"]["Enums"]["user_plan"];
           role: Database["public"]["Enums"]["user_role"];
           stripe_customer_id: string | null;
@@ -398,6 +401,7 @@ export type Database = {
           bio?: string | null;
           avatar_kind?: "photo" | "generated";
           avatar_seed?: string | null;
+          ranking_opt_in?: boolean;
         };
         Update: {
           avatar_url?: string | null;
@@ -432,6 +436,7 @@ export type Database = {
           bio?: string | null;
           avatar_kind?: "photo" | "generated";
           avatar_seed?: string | null;
+          ranking_opt_in?: boolean;
         };
         Relationships: [];
       };
@@ -732,6 +737,23 @@ export type Database = {
       apagar_registos_exercicio: {
         Args: { p_exercise_id: string | null; p_exercise_name: string };
         Returns: { sets_apagados: number; sessoes_apagadas: number }[];
+      };
+      medalhas: {
+        Args: { p_user?: string | null };
+        Returns: { chave: string; ganha_em: string | null; progresso: number; meta: number }[];
+      };
+      ranking_consistencia: {
+        Args: Record<string, never>;
+        Returns: {
+          user_id: string;
+          handle: string | null;
+          display_name: string | null;
+          avatar_url: string | null;
+          avatar_kind: "photo" | "generated";
+          avatar_seed: string | null;
+          sessoes: number;
+          sou_eu: boolean;
+        }[];
       };
       perfil_publico: {
         Args: { p_handle: string };

@@ -114,3 +114,13 @@ export function formatVolume(kg: number, locale: Locale): string {
   }
   return `${new Intl.NumberFormat(intl, { maximumFractionDigits: 0 }).format(kg)} kg`;
 }
+
+/** Dia da semana ISO (1 = segunda … 7 = domingo) de um instante no fuso dado. */
+export function isoWeekday(instante: Date, timezone: string): number {
+  const nome = new Intl.DateTimeFormat("en-US", { timeZone: timezone, weekday: "short" }).format(
+    instante,
+  );
+  const ordem = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const i = ordem.indexOf(nome);
+  return i === -1 ? 1 : i + 1;
+}

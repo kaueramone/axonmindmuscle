@@ -86,7 +86,11 @@ export function AppHeader({
         </div>
       </div>
 
-      <div className="mx-auto max-w-2xl px-5 pt-20">
+      {/* A barra fixa cresce com a área segura do telemóvel (o entalhe da
+          câmara, a barra de estado da app instalada). O espaço por baixo
+          dela tem de crescer o mesmo, senão o wordmark fica em cima do
+          texto — foi exatamente isso que aconteceu na app instalada. */}
+      <div className="mx-auto max-w-2xl px-5 pt-[calc(5rem+env(safe-area-inset-top))]">
         {eyebrow ? <p className="label-brand text-fg-subtle">{eyebrow}</p> : null}
         <h1 className="mt-2 text-large tracking-[-0.03em] text-fg">{title}</h1>
       </div>

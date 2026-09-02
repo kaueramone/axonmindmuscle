@@ -4,6 +4,12 @@ import { redirect } from "next/navigation";
 
 import { AppHeader } from "@/components/app/app-header";
 import { ExerciseRecords, type ExerciseRecord } from "@/components/app/exercise-records";
+import {
+  ConsistencyRanking,
+  Medals,
+  type LinhaRanking,
+  type Medalha,
+} from "@/components/app/medals";
 import { LoadSummary, type LoadDay, type ZoneRow } from "@/components/app/load-summary";
 import {
   ReadinessCheck,
@@ -21,7 +27,8 @@ import {
   type ReadinessSummary,
 } from "@/components/app/readiness-history";
 import { TimezoneSync } from "@/components/app/timezone-sync";
-import { Card } from "@/components/ui/surface";
+import { Photo } from "@/components/ui/icons";
+import { Card, ListRow } from "@/components/ui/surface";
 import { getDictionary } from "@/lib/i18n";
 import { assertLocale, formatDate } from "@/lib/i18n/config";
 import { route } from "@/lib/routes";
@@ -120,10 +127,19 @@ export default async function ProgressPage({
   );
 
   // A prontidão a prestar contas: o que previu contra o que aconteceu.
-  const [{ data: prontidaoVsDesempenho }, { data: exercicios }] = await Promise.all([
+  const [
+    { data: prontidaoVsDesempenho },
+    { data: exercicios },
+    { data: medalhas },
+    { data: ranking },
+    { data: perfilRanking },
+  ] = await Promise.all([
     supabase.rpc("readiness_vs_performance", { p_from: from, p_to: to }),
     // Todos os exercícios, sem filtro de período: é a lista de onde se apaga.
     supabase.rpc("exercise_history_summary"),
+    supabase.rpc("medalhas", {}),
+    supabase.rpc("ranking_consistencia"),
+    supabase.from("profiles").select("ranking_opt_in").eq("id", user.id).maybeSingle(),
   ]);
 
   const linhas = series ?? [];
@@ -231,6 +247,24 @@ export default async function ProgressPage({
           registos={(exercicios ?? []) as ExerciseRecord[]}
           copy={copy}
           locale={locale}
+        />
+
+        <Medals medalhas={(medalhas ?? []) as Medalha[]} copy={dict.app.medals} locale={locale} />
+
+        <ConsistencyRanking
+          linhas={(ranking ?? []) as LinhaRanking[]}
+          optIn={perfilRanking?.ranking_opt_in === true}
+          copy={dict.app.medals}
+          profileHref={route(locale, "profile")}
+          mes={formatDate(new Date(), locale, { month: "long", year: "numeric" })}
+        />
+
+        <ListRow
+          icon={<Photo className="size-4.5" />}
+          label={dict.app.photos.progressLink}
+          detail={dict.app.photos.progressLinkHint}
+          href={route(locale, "photos")}
+          className="rounded-xl border border-hairline bg-surface"
         />
 
         <ReadinessHistory

@@ -15,7 +15,8 @@ import type { Locale } from "@/lib/i18n/config";
 import { presentReadiness } from "@/lib/readiness/present";
 import type { ReadinessResult } from "@/lib/readiness/score";
 import { createClient } from "@/lib/supabase/server";
-import { localDate } from "@/lib/workout/periods";
+import { t } from "@/lib/i18n/interpolate";
+import { isoWeekday, localDate } from "@/lib/workout/periods";
 
 export const metadata: Metadata = { title: "Hoje", robots: { index: false } };
 
@@ -50,6 +51,20 @@ export default async function TodayPage({
     .eq("user_id", user!.id)
     .eq("local_date", hoje)
     .maybeSingle();
+
+  // O treino do dia, se a pessoa planeou a semana. Mais do que um no mesmo
+  // dia é possível; o primeiro pela ordem de criação é o que abre o ecrã e
+  // os outros ficam a um toque em "A minha semana".
+  const diaSemana = isoWeekday(new Date(), profile?.timezone ?? "Europe/Lisbon");
+  const { data: rotinasDeHoje } = await supabase
+    .from("routines")
+    .select("id, name")
+    .eq("user_id", user!.id)
+    .is("archived_at", null)
+    .contains("weekdays", [diaSemana])
+    .order("created_at", { ascending: true })
+    .limit(3);
+  const rotinaDeHoje = rotinasDeHoje?.[0] ?? null;
 
   const prontidao: ReadinessResult | null = registoDeHoje
     ? {
@@ -113,14 +128,40 @@ export default async function TodayPage({
 
         <Card className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
-            <h2 className="text-title3 text-fg">{dict.workout.startCta}</h2>
+            <h2 className="text-title3 text-fg">
+              {rotinaDeHoje
+                ? t(dict.app.week.todayTitle, { name: rotinaDeHoje.name })
+                : dict.workout.startCta}
+            </h2>
             <p className="text-callout leading-relaxed text-fg-muted">
-              {dict.workout.startBody}
+              {rotinaDeHoje
+                ? (rotinasDeHoje ?? [])
+                    .slice(1)
+                    .map((r) => r.name)
+                    .join(" · ") || dict.workout.startBody
+                : dict.workout.startBody}
             </p>
           </div>
-          <ButtonLink href={route(locale, "workout")} size="lg" fullWidth>
-            {dict.workout.startCta}
+          <ButtonLink
+            href={
+              rotinaDeHoje
+                ? `${route(locale, "workout")}?rotina=${rotinaDeHoje.id}`
+                : route(locale, "workout")
+            }
+            size="lg"
+            fullWidth
+          >
+            {rotinaDeHoje
+              ? t(dict.app.week.todayStart, { name: rotinaDeHoje.name })
+              : dict.workout.startCta}
           </ButtonLink>
+          <Link
+            href={route(locale, "week")}
+            className="flex items-center justify-center gap-1 text-subhead font-medium text-accent"
+          >
+            {dict.app.week.plan}
+            <ChevronRight className="size-4" />
+          </Link>
         </Card>
 
         <section className="flex flex-col gap-3">
