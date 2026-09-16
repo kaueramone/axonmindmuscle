@@ -264,7 +264,7 @@ const dictionary = {
         },
         {
           title: "Plano semanal",
-          body: "Rotinas marcadas nos dias da semana e um catálogo com mais de 70 exercícios. O ecrã Hoje abre já com o treino do dia.",
+          body: "Organiza as tuas rotinas ao longo da semana e explora uma biblioteca crescente de exercícios. O ecrã Hoje mostra diretamente o treino programado para o dia.",
           plan: "free",
         },
         {
@@ -700,6 +700,7 @@ const dictionary = {
         gemeos: "Gémeos",
         lombar: "Lombar",
         corpo_inteiro: "Corpo inteiro",
+        pernas: "Pernas",
       },
     },
     community: {

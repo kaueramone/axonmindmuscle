@@ -872,7 +872,8 @@ export type Database = {
         | "gluteos"
         | "gemeos"
         | "lombar"
-        | "corpo_inteiro";
+        | "corpo_inteiro"
+        | "pernas";
       experience_level: "beginner" | "intermediate" | "advanced";
       market_code: "PT" | "BR";
       theme_preference: "system" | "light" | "dark";

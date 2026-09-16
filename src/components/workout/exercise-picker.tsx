@@ -39,7 +39,11 @@ const GROUP_LABELS: Record<string, string> = {
   gemeos: "Gémeos",
   lombar: "Lombar",
   corpo_inteiro: "Corpo inteiro",
+  pernas: "Pernas",
 };
+
+/** "Pernas" junta as categorias das pernas num só filtro, sem mexer no catálogo. */
+const PERNAS = new Set(["pernas", "quadriceps", "isquiotibiais", "gluteos", "gemeos"]);
 
 export function ExercisePicker({
   exercises,
@@ -53,10 +57,11 @@ export function ExercisePicker({
   const [query, setQuery] = useState("");
   const [group, setGroup] = useState<string | null>(null);
 
-  const groups = useMemo(
-    () => [...new Set(exercises.map((e) => e.category))].sort(),
-    [exercises],
-  );
+  const groups = useMemo(() => {
+    const presentes = new Set(exercises.map((e) => e.category));
+    if ([...presentes].some((c) => PERNAS.has(c))) presentes.add("pernas");
+    return [...presentes].sort();
+  }, [exercises]);
 
   const filtrados = useMemo(() => {
     const termo = query
@@ -66,7 +71,9 @@ export function ExercisePicker({
       .replace(/[̀-ͯ]/g, "");
 
     return exercises.filter((e) => {
-      if (group && e.category !== group) return false;
+      if (group && !(group === "pernas" ? PERNAS.has(e.category) : e.category === group)) {
+        return false;
+      }
       if (!termo) return true;
       return e.name
         .toLowerCase()
@@ -91,7 +98,9 @@ export function ExercisePicker({
         className="h-12 w-full rounded-md border border-hairline bg-surface px-4 text-body text-fg placeholder:text-fg-subtle outline-none focus:border-accent focus:shadow-[0_0_0_4px_var(--accent-soft)]"
       />
 
-      <div className="scrollbar-none -mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
+      {/* No telemóvel desliza; no desktop, sem gesto de arrasto, as categorias
+          quebram linha para ficarem todas à vista. */}
+      <div className="scrollbar-none -mx-5 flex gap-2 overflow-x-auto px-5 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
         <button
           type="button"
           onClick={() => setGroup(null)}

@@ -130,7 +130,8 @@ Num dia em que a prontidão pede contenção não se progride, mesmo que a últi
 série tenha sobrado.
 
 Plano semanal: rotinas com os dias da semana em que se fazem; a página "Hoje"
-abre com a rotina do dia. Catálogo com mais de 70 exercícios de musculação.
+abre com a rotina do dia. Biblioteca de exercícios de musculação em crescimento;
+não citar um número de exercícios.
 
 Progresso: cada série fica registada. Volume por período, melhor marca por
 exercício, séries por grupo muscular, histórico de prontidão. Exportação dos

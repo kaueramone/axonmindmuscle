@@ -266,7 +266,7 @@ const dictionary: Dict = {
         },
         {
           title: "Plano semanal",
-          body: "Rotinas marcadas nos dias da semana e um catálogo com mais de 70 exercícios. A tela Hoje já abre com o treino do dia.",
+          body: "Organize suas rotinas ao longo da semana e explore uma biblioteca crescente de exercícios. A tela Hoje mostra diretamente o treino programado para o dia.",
           plan: "free",
         },
         {
@@ -699,6 +699,7 @@ const dictionary: Dict = {
         gemeos: "Panturrilhas",
         lombar: "Lombar",
         corpo_inteiro: "Corpo inteiro",
+        pernas: "Pernas",
       },
     },
     community: {

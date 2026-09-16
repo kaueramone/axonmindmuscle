@@ -25,9 +25,13 @@ export const MUSCLE_LABELS: Record<MuscleGroup, string> = {
   gemeos: "Gémeos",
   lombar: "Lombar",
   corpo_inteiro: "Corpo inteiro",
+  pernas: "Pernas",
 };
 
 const GRUPOS = Object.keys(MUSCLE_LABELS) as MuscleGroup[];
+// "Pernas" é grupo de catálogo, não um músculo: nos principais e secundários
+// ficam os músculos concretos, que é o que a prontidão e o progresso contam.
+const MUSCULOS = GRUPOS.filter((g) => g !== "pernas");
 
 const LOCALE_LABELS: Record<Locale, string> = {
   "pt-pt": "Português (Portugal)",
@@ -182,7 +186,7 @@ export function ExerciseForm({
                 setDados((d) => ({ ...d, category }));
                 setGuardado(false);
               }}
-              className={INPUT}
+              className={`${INPUT} [&>option]:bg-bg-elevated [&>option]:text-fg`}
             >
               {GRUPOS.map((g) => (
                 <option key={g} value={g}>
@@ -226,7 +230,7 @@ export function ExerciseForm({
             Músculos principais
           </span>
           <Chips
-            valores={GRUPOS}
+            valores={MUSCULOS}
             selecionados={dados.primaryMuscles}
             onToggle={(v) => {
               setDados((d) => ({
@@ -245,7 +249,7 @@ export function ExerciseForm({
             Músculos secundários
           </span>
           <Chips
-            valores={GRUPOS}
+            valores={MUSCULOS}
             selecionados={dados.secondaryMuscles}
             onToggle={(v) => {
               setDados((d) => ({
