@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 
-import { MUSCLE_LABELS } from "@/components/admin/exercise-form";
+import type { MuscleLabels } from "@/components/admin/exercise-form";
 import { Pencil, Photo, Play, Plus } from "@/components/ui/icons";
 import { Badge, Spinner } from "@/components/ui/surface";
 import { setExerciseActiveAction } from "@/lib/admin/actions";
@@ -27,9 +27,11 @@ export type LinhaExercicio = {
 export function ExerciseList({
   linhas,
   locale,
+  muscleLabels,
 }: {
   linhas: LinhaExercicio[];
   locale: Locale;
+  muscleLabels: MuscleLabels;
 }) {
   const router = useRouter();
   const [pendente, iniciar] = useTransition();
@@ -132,7 +134,7 @@ export function ExerciseList({
                   {l.name}
                 </span>
                 <span className="truncate text-footnote text-fg-subtle">
-                  {MUSCLE_LABELS[l.category] ?? l.category}
+                  {muscleLabels[l.category] ?? l.category}
                   {l.equipment ? ` · ${l.equipment}` : ""}
                 </span>
               </span>

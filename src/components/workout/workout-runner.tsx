@@ -571,6 +571,7 @@ export function WorkoutRunner({
         <ExercisePicker
           exercises={exercises}
           copy={copy}
+          muscleLabels={dict.app.progress.muscles}
           onPick={(escolhido) => {
             setExercise(escolhido);
 

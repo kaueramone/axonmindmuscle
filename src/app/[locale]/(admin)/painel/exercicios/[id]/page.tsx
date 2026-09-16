@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ExerciseForm } from "@/components/admin/exercise-form";
 import { requireAdmin } from "@/lib/admin/guard";
 import type { ExercisePayload } from "@/lib/admin/actions";
+import { getDictionary } from "@/lib/i18n";
 import { assertLocale } from "@/lib/i18n/config";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +15,7 @@ export default async function EditExercisePage({
 }) {
   const { locale: rawLocale, id } = await params;
   const locale = assertLocale(rawLocale);
+  const dict = await getDictionary(locale);
   const { supabase } = await requireAdmin(locale);
 
   const [{ data: linha }, { data: textos }] = await Promise.all([
@@ -64,7 +66,7 @@ export default async function EditExercisePage({
           </p>
         ) : null}
       </div>
-      <ExerciseForm inicial={inicial} locale={locale} />
+      <ExerciseForm inicial={inicial} locale={locale} muscleLabels={dict.app.progress.muscles} />
     </div>
   );
 }

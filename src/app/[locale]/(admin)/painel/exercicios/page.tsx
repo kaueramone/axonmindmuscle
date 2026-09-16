@@ -1,5 +1,6 @@
 import { ExerciseList, type LinhaExercicio } from "@/components/admin/exercise-list";
 import { requireAdmin } from "@/lib/admin/guard";
+import { getDictionary } from "@/lib/i18n";
 import { assertLocale } from "@/lib/i18n/config";
 
 export const dynamic = "force-dynamic";
@@ -49,5 +50,6 @@ export default async function AdminExercisesPage({
     .filter((l) => l.name)
     .sort((a, b) => a.name.localeCompare(b.name, locale));
 
-  return <ExerciseList linhas={ordenadas} locale={locale} />;
+  const dict = await getDictionary(locale);
+  return <ExerciseList linhas={ordenadas} locale={locale} muscleLabels={dict.app.progress.muscles} />;
 }

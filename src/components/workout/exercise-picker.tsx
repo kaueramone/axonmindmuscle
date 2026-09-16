@@ -25,22 +25,8 @@ export type ExerciseOption = {
   actionFeel: string | null;
 };
 
-const GROUP_LABELS: Record<string, string> = {
-  peito: "Peito",
-  costas: "Costas",
-  ombros: "Ombros",
-  biceps: "Bíceps",
-  triceps: "Tríceps",
-  antebraco: "Antebraço",
-  abdomen: "Abdómen",
-  quadriceps: "Quadríceps",
-  isquiotibiais: "Isquiotibiais",
-  gluteos: "Glúteos",
-  gemeos: "Gémeos",
-  lombar: "Lombar",
-  corpo_inteiro: "Corpo inteiro",
-  pernas: "Pernas",
-};
+/** Etiquetas dos grupos, no idioma da pessoa (vêm do dicionário). */
+export type MuscleLabels = Dict["app"]["progress"]["muscles"];
 
 /** "Pernas" junta as categorias das pernas num só filtro, sem mexer no catálogo. */
 const PERNAS = new Set(["pernas", "quadriceps", "isquiotibiais", "gluteos", "gemeos"]);
@@ -49,19 +35,25 @@ export function ExercisePicker({
   exercises,
   onPick,
   copy,
+  muscleLabels,
 }: {
   exercises: ExerciseOption[];
   onPick: (exercise: ExerciseOption) => void;
   copy: Dict["workout"];
+  muscleLabels: MuscleLabels;
 }) {
   const [query, setQuery] = useState("");
+  const etiqueta = (g: string) => muscleLabels[g as keyof MuscleLabels] ?? g;
   const [group, setGroup] = useState<string | null>(null);
 
+  // Ordenados pela etiqueta no idioma da pessoa, não pela chave interna: em
+  // pt-BR "Panturrilhas" não pode aparecer onde caberia "Gémeos".
   const groups = useMemo(() => {
     const presentes = new Set(exercises.map((e) => e.category));
     if ([...presentes].some((c) => PERNAS.has(c))) presentes.add("pernas");
-    return [...presentes].sort();
-  }, [exercises]);
+    const nome = (g: string) => muscleLabels[g as keyof MuscleLabels] ?? g;
+    return [...presentes].sort((a, b) => nome(a).localeCompare(nome(b), "pt"));
+  }, [exercises, muscleLabels]);
 
   const filtrados = useMemo(() => {
     const termo = query
@@ -125,7 +117,7 @@ export function ExercisePicker({
                 : "border-hairline bg-surface text-fg-muted",
             )}
           >
-            {GROUP_LABELS[g] ?? g}
+            {etiqueta(g)}
           </button>
         ))}
       </div>
@@ -168,7 +160,7 @@ export function ExercisePicker({
                     {exercise.name}
                   </span>
                   <span className="truncate text-footnote text-fg-subtle">
-                    {GROUP_LABELS[exercise.category] ?? exercise.category}
+                    {etiqueta(exercise.category)}
                     {exercise.equipment ? ` · ${exercise.equipment}` : ""}
                   </span>
                 </span>

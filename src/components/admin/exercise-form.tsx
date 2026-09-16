@@ -11,24 +11,13 @@ import { locales, type Locale } from "@/lib/i18n/config";
 import type { ExerciseMediaType, ExerciseTracking, MuscleGroup } from "@/lib/supabase/types";
 import { cn } from "@/lib/utils";
 
-export const MUSCLE_LABELS: Record<MuscleGroup, string> = {
-  peito: "Peito",
-  costas: "Costas",
-  ombros: "Ombros",
-  biceps: "Bíceps",
-  triceps: "Tríceps",
-  antebraco: "Antebraço",
-  abdomen: "Abdómen",
-  quadriceps: "Quadríceps",
-  isquiotibiais: "Isquiotibiais",
-  gluteos: "Glúteos",
-  gemeos: "Gémeos",
-  lombar: "Lombar",
-  corpo_inteiro: "Corpo inteiro",
-  pernas: "Pernas",
-};
+/** Etiquetas dos grupos musculares no idioma de quem administra (do dicionário). */
+export type MuscleLabels = Record<MuscleGroup, string>;
 
-const GRUPOS = Object.keys(MUSCLE_LABELS) as MuscleGroup[];
+const GRUPOS: MuscleGroup[] = [
+  "peito", "costas", "ombros", "biceps", "triceps", "antebraco", "abdomen",
+  "quadriceps", "isquiotibiais", "gluteos", "gemeos", "lombar", "corpo_inteiro", "pernas",
+];
 // "Pernas" é grupo de catálogo, não um músculo: nos principais e secundários
 // ficam os músculos concretos, que é o que a prontidão e o progresso contam.
 const MUSCULOS = GRUPOS.filter((g) => g !== "pernas");
@@ -75,10 +64,12 @@ function Chips({
   valores,
   selecionados,
   onToggle,
+  labels,
 }: {
   valores: MuscleGroup[];
   selecionados: MuscleGroup[];
   onToggle: (v: MuscleGroup) => void;
+  labels: MuscleLabels;
 }) {
   return (
     <div className="flex flex-wrap gap-1.5">
@@ -97,7 +88,7 @@ function Chips({
                 : "border-hairline bg-surface text-fg-subtle hover:text-fg",
             )}
           >
-            {MUSCLE_LABELS[v]}
+            {labels[v]}
           </button>
         );
       })}
@@ -110,9 +101,11 @@ function Chips({
 export function ExerciseForm({
   inicial,
   locale,
+  muscleLabels,
 }: {
   inicial: ExercisePayload;
   locale: Locale;
+  muscleLabels: MuscleLabels;
 }) {
   const router = useRouter();
 
@@ -190,7 +183,7 @@ export function ExerciseForm({
             >
               {GRUPOS.map((g) => (
                 <option key={g} value={g}>
-                  {MUSCLE_LABELS[g]}
+                  {muscleLabels[g]}
                 </option>
               ))}
             </select>
@@ -231,6 +224,7 @@ export function ExerciseForm({
           </span>
           <Chips
             valores={MUSCULOS}
+            labels={muscleLabels}
             selecionados={dados.primaryMuscles}
             onToggle={(v) => {
               setDados((d) => ({
@@ -250,6 +244,7 @@ export function ExerciseForm({
           </span>
           <Chips
             valores={MUSCULOS}
+            labels={muscleLabels}
             selecionados={dados.secondaryMuscles}
             onToggle={(v) => {
               setDados((d) => ({

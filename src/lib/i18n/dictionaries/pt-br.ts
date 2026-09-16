@@ -694,7 +694,7 @@ const dictionary: Dict = {
         antebraco: "Antebraço",
         abdomen: "Abdômen",
         quadriceps: "Quadríceps",
-        isquiotibiais: "Isquiotibiais",
+        isquiotibiais: "Posterior de coxa",
         gluteos: "Glúteos",
         gemeos: "Panturrilhas",
         lombar: "Lombar",

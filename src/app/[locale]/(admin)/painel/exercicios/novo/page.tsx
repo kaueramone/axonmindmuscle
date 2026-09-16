@@ -1,5 +1,6 @@
 import { ExerciseForm } from "@/components/admin/exercise-form";
 import { requireAdmin } from "@/lib/admin/guard";
+import { getDictionary } from "@/lib/i18n";
 import { assertLocale } from "@/lib/i18n/config";
 import type { ExercisePayload } from "@/lib/admin/actions";
 
@@ -22,6 +23,7 @@ export default async function NewExercisePage({
 }) {
   const { locale: rawLocale } = await params;
   const locale = assertLocale(rawLocale);
+  const dict = await getDictionary(locale);
   await requireAdmin(locale);
 
   const inicial: ExercisePayload = {
@@ -41,7 +43,7 @@ export default async function NewExercisePage({
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-title1 text-fg">Novo exercício</h1>
-      <ExerciseForm inicial={inicial} locale={locale} />
+      <ExerciseForm inicial={inicial} locale={locale} muscleLabels={dict.app.progress.muscles} />
     </div>
   );
 }
