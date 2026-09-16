@@ -198,27 +198,149 @@ const dictionary: Dict = {
 
       pricingTitle: "Comece sem pagar nada",
       pricingBody:
-        "As funcionalidades essenciais são gratuitas para sempre. O plano PRO existe para quem quiser ir além.",
+        "O essencial é gratuito para sempre. O PRO acrescenta o Professor AXON, o relatório de evolução e a sua voz no mural.",
+      compareTitle: "O que está em cada plano",
+      compareFree: "Gratuito",
+      comparePro: "PRO",
+      compareIncluded: "Incluído",
+      compareNotIncluded: "Não incluído",
+      compareRows: [
+        { label: "Conta pessoal e área privada", free: true, pro: true },
+        { label: "Metrônomo visual e descanso com aviso", free: true, pro: true },
+        { label: "Painel de prontidão diário", free: true, pro: true },
+        { label: "Sugestão de carga e progressão", free: true, pro: true },
+        { label: "Plano semanal e catálogo de exercícios", free: true, pro: true },
+        { label: "Registro de treinos, progresso e medalhas", free: true, pro: true },
+        { label: "Fotos de progresso, só no seu celular", free: true, pro: true },
+        { label: "Exportação dos seus dados (CSV e backup)", free: true, pro: true },
+        { label: "Comunidade: ler, reagir e seguir", free: true, pro: true },
+        { label: "Comunidade: escrever no mural e compartilhar treinos", free: false, pro: true },
+        { label: "Professor AXON, sem limite de perguntas", free: false, pro: true },
+        { label: "Relatório PDF de evolução", free: false, pro: true },
+      ],
       pricingFreeTitle: "Gratuito",
+      pricingFreeForever: "para sempre",
       pricingFreeItems: [
-        "Conta pessoal e área privada",
-        "Metrônomo visual",
-        "Painel de prontidão diário",
-        "Registro de treinos e progresso",
+        "Todas as ferramentas de treino",
+        "Prontidão, sugestão de carga e plano semanal",
+        "Progresso, medalhas e exportação dos dados",
+        "Comunidade: ler, reagir e seguir",
       ],
       pricingProTitle: "PRO",
       pricingProItems: [
         "Tudo o que está no plano gratuito",
         "Professor AXON sem limite de perguntas",
-        "Histórico e análise detalhada",
-        "Protocolos avançados",
+        "Relatório PDF de evolução",
+        "Escrever no mural e compartilhar treinos",
       ],
-      pricingProNote: "Disponível em uma fase seguinte. Pagamento via {payment}.",
       pricingProMonth: "por mês",
+      pricingProYear: "por ano",
+      pricingProOr: "ou",
+      pricingProYearSaving: "você economiza {percent}% em relação ao mensal",
       pricingProBadge: "Preço de fundador",
+      pricingProCode: "com o código {code}",
       pricingProCta: "Criar conta e assinar",
+      pricingProPayment: "Pagamento via {payment} ou cartão, pelo Stripe. Cancele quando quiser.",
       pricingProFounders:
-        "Esse valor é da fase de fundadores e não fica. Quando a AXON abrir ao público, o preço volta ao normal — quem entrar agora ajuda a construir ela.",
+        "Esse valor é da fase de fundadores e não fica. Quando a AXON abrir ao público, o preço volta ao normal. Quem entrar agora ajuda a construí-la.",
+      pricingUnavailable: "Os preços estão no aplicativo, na página Planos, assim que você criar a conta.",
+
+      toolsTitle: "As ferramentas, uma a uma",
+      toolsSubtitle: "O que cada uma faz e em qual plano está.",
+      toolPlanLabels: { free: "Gratuito", pro: "PRO", mixed: "Gratuito · PRO" },
+      tools: [
+        {
+          title: "Metrônomo visual",
+          body: "Marca a excêntrica, a pausa e a concêntrica na tela, com som opcional. Quatro cadências prontas e descanso entre séries com aviso no celular.",
+          plan: "free",
+        },
+        {
+          title: "Painel de prontidão",
+          body: "Quatro perguntas antes de treinar e, se quiser, o batimento em repouso. Devolve o estado do dia e ajusta a carga e as repetições em reserva.",
+          plan: "free",
+        },
+        {
+          title: "Sugestão de carga",
+          body: "Diz quanto peso colocar, a partir da última vez que você fez o exercício, arredondado às anilhas da academia. Só progride quando a série sobrou e a prontidão deixa.",
+          plan: "free",
+        },
+        {
+          title: "Plano semanal",
+          body: "Rotinas marcadas nos dias da semana e um catálogo com mais de 70 exercícios. A tela Hoje já abre com o treino do dia.",
+          plan: "free",
+        },
+        {
+          title: "Progresso e medalhas",
+          body: "Cada série fica registrada: volume por período, melhores marcas por exercício, séries por grupo muscular e medalhas por consistência. Você exporta tudo em CSV quando quiser.",
+          plan: "free",
+        },
+        {
+          title: "Fotos de progresso",
+          body: "Guardadas só no seu celular, nunca nos nossos servidores. Compare duas datas lado a lado.",
+          plan: "free",
+        },
+        {
+          title: "Comunidade",
+          body: "Mural, seguir pessoas, respostas e notificações. Ler e reagir é de todo mundo; escrever e compartilhar treinos é do PRO.",
+          plan: "mixed",
+        },
+        {
+          title: "Professor AXON",
+          body: "Um professor de bolso que responde sobre o método e o seu treino de hoje, levando em conta a sua prontidão e a sua rotina. Fora de treino, não responde.",
+          plan: "pro",
+        },
+        {
+          title: "Relatório PDF de evolução",
+          body: "Até 24 meses de treino em um documento: sessões, volume, melhores marcas e prontidão. Para levar ao treinador ou guardar.",
+          plan: "pro",
+        },
+      ],
+
+      professorEyebrow: "Plano PRO",
+      professorTitle: "Um professor no bolso, dentro do método.",
+      professorBody:
+        "O Professor AXON responde a perguntas sobre treino e sobre o método com base na mesma literatura que sustenta a AXON, e diz quando a evidência não é conclusiva. Ele sabe a sua prontidão de hoje e a rotina do dia, por isso responde ao 'e hoje?' sem pedir para você repetir nada.",
+      professorPoints: [
+        "Só fala de treino e do método. Fora disso, diz que não responde.",
+        "Nunca promete resultados nem inventa estudos.",
+        "Dor ou lesão? Ele encaminha a um profissional, sem diagnósticos.",
+      ],
+      professorDemoQuestion: "Hoje estou com prontidão moderada. Como ajusto o treino de pernas?",
+      professorDemoAnswer:
+        "Sua prontidão moderada já está nas sugestões de hoje: carga com menos 7,5% e mais uma repetição em reserva. Mantenha as séries, não force a progressão e poupe o peito, que está dolorido. O estímulo se mantém; o custo desce.",
+      professorCta: "Ver planos e preços",
+
+      faqTitle: "Perguntas frequentes",
+      faq: [
+        {
+          q: "Preciso pagar para começar?",
+          a: "Não. O plano gratuito não tem prazo nem pede cartão: conta, metrônomo, prontidão, sugestão de carga, plano semanal, progresso e exportação dos seus dados.",
+        },
+        {
+          q: "O que eu ganho com o PRO?",
+          a: "O Professor AXON sem limite de perguntas, o relatório PDF de evolução e a sua voz no mural da comunidade (escrever e compartilhar treinos). O resto é igual para todo mundo.",
+        },
+        {
+          q: "Como pago e posso cancelar?",
+          a: "Você paga via {payment} ou cartão, mensal ou anual, pelo Stripe. Cancela quando quiser, no portal de faturamento, sem falar com ninguém.",
+        },
+        {
+          q: "O que é o código {code}?",
+          a: "Um desconto de pré-lançamento para quem entra agora. Aplica-se no checkout, vale uma vez por pessoa e fica válido até o lançamento oficial.",
+        },
+        {
+          q: "Preciso de equipamento especial?",
+          a: "Não. Nem câmera, nem sensor, nem relógio: basta o celular apoiado no banco. O batimento em repouso se conta no pulso e é opcional.",
+        },
+        {
+          q: "Os meus dados são meus?",
+          a: "Sim. Você exporta tudo em CSV ou backup quando quiser, as fotos de progresso nunca saem do seu celular e os dados de prontidão só existem com a sua autorização, que pode retirar a qualquer momento.",
+        },
+        {
+          q: "Funciona no celular?",
+          a: "Sim. A AXON roda no navegador e se instala na tela inicial como um aplicativo, no iPhone e no Android, sem passar por nenhuma loja.",
+        },
+      ],
 
       finalTitle: "O sinal certo, transmitido.",
       finalBody:
