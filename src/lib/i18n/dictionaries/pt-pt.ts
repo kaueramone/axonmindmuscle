@@ -56,7 +56,7 @@ const dictionary = {
   },
 
   privacyPolicy: {
-    updated: "Atualizada a 2 de setembro de 2026.",
+    updated: "Atualizada a 16 de setembro de 2026.",
     intro:
       "Esta política explica que dados a AXON Mind-Muscle guarda, para quê, com que base legal e durante quanto tempo. Está escrita para ser lida, não para ser aceite às cegas.",
     sections: [
@@ -75,6 +75,7 @@ const dictionary = {
           "Prontidão: horas e qualidade do sono, energia, dores musculares e batimento cardíaco em repouso. São dados de saúde e só os guardamos com a tua autorização explícita, pedida no ecrã de prontidão. Podes retirá-la em Conta a qualquer momento; nesse caso o histórico de prontidão é apagado na hora.",
           "Comunidade: publicações, fotografias que partilhes, apoios, quem segues e denúncias que faças.",
           "Pagamentos: o identificador de cliente e o estado da subscrição. Os dados do cartão, MB WAY ou Pix ficam no Stripe; nunca passam por nós.",
+          "Professor AXON: as perguntas que fazes ao assistente e as respostas que recebes não ficam guardadas nos nossos servidores. A conversa vive no teu browser e desaparece quando fechas o separador.",
         ],
       },
       {
@@ -85,6 +86,7 @@ const dictionary = {
           "Mostrar as tuas publicações a outros membros da comunidade, com base no contrato: publicar é uma ação tua.",
           "Cobrar a subscrição e cumprir obrigações fiscais, com base no contrato e na lei.",
           "Manter o serviço seguro — limites de pedidos, proteção contra abuso — com base no nosso interesse legítimo em operá-lo.",
+          "Responder às tuas perguntas no Professor AXON (plano PRO), com base no contrato. Para responder ao teu treino de hoje, o assistente recebe, além da conversa, o teu primeiro nome, objetivo, experiência, a rotina planeada para o dia e o estado da prontidão de hoje (Boa, Moderada ou Em recuperação, com os fatores que pesaram), nunca os valores de sono ou de batimento. A prontidão só entra se a tiveres autorizado e registado nesse dia.",
         ],
       },
       {
@@ -95,6 +97,7 @@ const dictionary = {
           "Stripe (pagamentos e faturação).",
           "Cloudflare Turnstile (proteção contra robôs no registo e na entrada).",
           "Google (só se entrares com a conta Google).",
+          "Anthropic (o modelo de linguagem que responde no Professor AXON). Recebe só o texto da conversa e o contexto descrito acima, não usa esses dados para treinar modelos, e o tratamento é feito nos Estados Unidos ao abrigo do acordo de tratamento de dados e das cláusulas contratuais-tipo da União Europeia.",
           "Não vendemos dados, não os cedemos para publicidade e não fazemos perfis para terceiros.",
         ],
       },
@@ -1174,6 +1177,41 @@ const dictionary = {
     appErrorTitle: "Algo falhou",
     appErrorBody: "Ocorreu um erro inesperado. Podes tentar novamente.",
     retry: "Tentar novamente",
+  },
+
+  professor: {
+    title: "Professor AXON",
+    subtitle: "Respostas com base em evidência",
+    open: "Falar com o Professor AXON",
+    dragHint: "Arrasta o botão para o mudar de sítio",
+    close: "Fechar o Professor",
+    newChat: "Nova conversa",
+    greeting:
+      "Olá{name}! Sou o Professor AXON. Pergunta-me sobre o método, o treino de hoje, cadência, séries, descanso ou prontidão.",
+    suggestions: [
+      "Quantas séries por semana para hipertrofia?",
+      "O que é RIR e como o uso?",
+      "Como ajusto o treino com a prontidão de hoje?",
+    ],
+    placeholder: "Escreve a tua pergunta",
+    send: "Enviar",
+    thinking: "A pensar",
+    stop: "Parar",
+    truncated: "A resposta ficou pelo limite de tamanho. Pede-me para continuar, se quiseres.",
+    disclaimer:
+      "O Professor não substitui um médico ou fisioterapeuta. Com dor ou lesão, procura um profissional.",
+    errorGeneric: "Não consegui responder agora. Tenta outra vez daqui a um momento.",
+    errorBusy: "Estou com muitas perguntas ao mesmo tempo. Tenta daqui a alguns segundos.",
+    errorRate: "Fizeste muitas perguntas seguidas. Volta daqui a {n} minutos.",
+    errorSession: "A tua sessão expirou. Entra de novo para continuar.",
+    errorUnavailable: "O Professor está indisponível de momento. Já estamos a tratar disso.",
+    errorLong: "A pergunta é demasiado longa. Tenta em menos palavras.",
+    errorNetwork: "Sem ligação. Verifica a internet e tenta novamente.",
+    proTitle: "O Professor AXON é do plano PRO",
+    proBody:
+      "Perguntas sem limite sobre o método e o teu treino, com respostas que dizem quando a evidência não é conclusiva.",
+    proCta: "Ver planos",
+    rowDetail: "Pergunta sobre o método e o teu treino",
   },
 } as const;
 

@@ -24,8 +24,10 @@ Fundação da plataforma e a primeira ferramenta de treino:
   histórico de progresso por período
 - **Painel de prontidão** que ajusta a prescrição do treino do dia
 
-**Fora do âmbito desta fase** (por decisão da proposta): tutoriais,
-Professor AXON, comunidade, pontos e pagamentos.
+- **Professor AXON** (plano PRO): assistente de treino num balão de
+  conversa, com a metodologia e o contexto do dia da pessoa (Setembro 2026)
+
+**Fora do âmbito desta fase** (por decisão da proposta): tutoriais e pontos.
 As entradas para estas ferramentas já existem na interface, marcadas
 honestamente como em desenvolvimento.
 
@@ -228,6 +230,49 @@ O resultado aterra em ação — a página de treino lê a prontidão do dia,
 ajusta as repetições em reserva de partida, mostra a carga sugerida e avisa
 quando o exercício escolhido usa um grupo dorido ou treinado há menos de 48
 horas. Sem isso, o painel seria um horóscopo.
+
+---
+
+## Professor AXON
+
+Assistente do plano PRO. Vive em toda a área privada: um botão flutuante
+(arrastável; a posição fica guardada no browser) abre o Professor no canto
+inferior esquerdo, a deslizar da direita para a esquerda, com um balão de
+conversa. A linha "Professor AXON" em `/hoje` abre o mesmo balão.
+
+- **Só responde a treino e à metodologia AXON.** Fora disso, diz numa frase
+  que não pode ajudar e sugere um exemplo do que a pessoa pode perguntar. Dor,
+  lesão e sintomas são reencaminhados para médico ou fisioterapeuta, sem
+  diagnóstico. As regras vivem no servidor (`src/lib/professor/prompt.ts`), não
+  no cliente.
+- **Conhecimento:** `src/lib/professor/conhecimento.ts` é a metodologia tal
+  como está publicada no site, mais intervalos de referência da literatura. É
+  o bloco estável do prompt e vai marcado para cache na API (cerca de 4.100
+  tokens, acima do mínimo do Haiku): paga-se uma vez por janela de cinco
+  minutos e lê-se a 10% nas perguntas seguintes.
+- **Contexto da pessoa:** primeiro nome, experiência, objetivo, frequência
+  semanal, prontidão de hoje (já em texto, pelas mesmas funções da interface;
+  nunca os valores de sono ou batimento) e a rotina planeada para o dia.
+  Montado em `src/lib/professor/contexto.ts`, num bloco separado, fora da
+  cache.
+- **Rota:** `POST /api/professor` recebe a conversa inteira (o browser guarda
+  o histórico em `sessionStorage`; o servidor não grava nada), confirma sessão
+  e plano (402 sem PRO), cobra uma unidade em `consume_rate_limit('professor')`
+  (40 por hora, migração `20260916_professor_axon.sql`) e devolve a resposta em
+  streaming, uma linha JSON por pedaço: `{"t":"..."}`, `{"fim":"end_turn"}`,
+  `{"e":"ocupado"}`.
+- **Modelo:** Claude Haiku 4.5 por omissão (`claude-haiku-4-5-20251001`), sem
+  SDK: dois cabeçalhos e um leitor de SSE em `src/lib/professor/anthropic.ts`.
+  Para trocar de modelo basta `PROFESSOR_MODEL` no ambiente.
+
+Variáveis: `ANTHROPIC_API_KEY` (obrigatória, só no servidor) e, se a chave foi
+criada "para todos os workspaces", `ANTHROPIC_WORKSPACE_ID` (a API recusa o
+pedido sem o cabeçalho `anthropic-workspace-id`). Uma chave criada dentro de
+um workspace não precisa dele.
+
+A política de privacidade descreve o que segue para a Anthropic e com que
+base; o acordo de tratamento de dados da Anthropic tem de estar aceite na
+consola da conta que detém a chave.
 
 ---
 

@@ -7,7 +7,7 @@ import type { createClient } from "@/lib/supabase/server";
 type Cliente = Awaited<ReturnType<typeof createClient>>;
 
 /** As acoes que a funcao `consume_rate_limit` conhece. Os tetos vivem la. */
-export type AcaoLimitada = "exportar" | "relatorio";
+export type AcaoLimitada = "exportar" | "relatorio" | "professor";
 
 /**
  * Consome uma unidade do limite de pedidos da pessoa e devolve a resposta 429

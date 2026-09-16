@@ -227,7 +227,7 @@ export default async function SciencePage({
       <section className="border-b border-hairline">
         <div className="mx-auto max-w-4xl px-5 py-20 sm:px-8 sm:py-24">
           <Reveal>
-            <Badge tone="accent">{dict.common.inDevelopment}</Badge>
+            <Badge tone="accent">{dict.common.pro}</Badge>
             <h2 className="mt-5 text-[clamp(1.75rem,4vw,2.5rem)] text-fg">
               {copy.assistantTitle}
             </h2>

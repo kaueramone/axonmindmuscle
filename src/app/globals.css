@@ -461,6 +461,41 @@
   animation: axon-pulse 2.4s var(--ease-spring) infinite;
 }
 
+/* O Professor AXON entra da direita para a esquerda e fica no canto; o balão
+   abre logo a seguir, a partir do sítio onde ele está. Em `translate` e não em
+   `transform`, como as classes do Tailwind v4, para não se somarem. */
+@keyframes axon-professor-in {
+  from {
+    opacity: 0;
+    translate: 4.5rem 0;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes axon-bubble-in {
+  from {
+    opacity: 0;
+    scale: 0.92;
+    translate: 0 0.5rem;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+}
+
+@utility animate-professor-in {
+  animation: axon-professor-in 0.55s var(--ease-spring) both;
+}
+
+@utility animate-bubble-in {
+  animation: axon-bubble-in 0.4s var(--ease-spring) 0.16s both;
+}
+
 /* Barras de deslocamento discretas */
 @layer utilities {
   .scrollbar-none {

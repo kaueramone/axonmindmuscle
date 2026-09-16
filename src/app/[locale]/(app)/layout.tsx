@@ -1,6 +1,7 @@
 import { assertLocale } from "@/lib/i18n/config";
 import { redirect } from "next/navigation";
 
+import { ProfessorAxon } from "@/components/app/professor/professor-axon";
 import { TabBar } from "@/components/app/tab-bar";
 import { contarNaoLidas } from "@/lib/community/feed";
 import { getDictionary } from "@/lib/i18n";
@@ -29,7 +30,7 @@ export default async function AppLayout({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("onboarding_completed_at")
+    .select("onboarding_completed_at, plan, display_name")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -51,6 +52,14 @@ export default async function AppLayout({
           community: dict.nav.community,
           profile: dict.nav.profile,
         }}
+      />
+      {/* O Professor vive em toda a área privada: o botão flutuante fica onde
+          a pessoa o deixar e o balão abre por cima de qualquer página. */}
+      <ProfessorAxon
+        locale={locale}
+        plan={profile.plan}
+        firstName={profile.display_name?.trim().split(/\s+/)[0] ?? null}
+        copy={dict.professor}
       />
     </div>
   );

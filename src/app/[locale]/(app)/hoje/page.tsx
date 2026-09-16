@@ -5,10 +5,11 @@ import Link from "next/link";
 
 import { AppHeader } from "@/components/app/app-header";
 import { Greeting } from "@/components/app/greeting";
+import { LinhaProfessor } from "@/components/app/professor/linha-professor";
 import { ReadinessSummary } from "@/components/app/readiness-summary";
 import { Bolt, ChevronRight, Sparkle } from "@/components/ui/icons";
 import { ButtonLink } from "@/components/ui/button";
-import { Badge, Card, ListGroup, ListRow } from "@/components/ui/surface";
+import { Card, ListRow } from "@/components/ui/surface";
 import { route } from "@/lib/routes";
 import { getDictionary } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n/config";
@@ -78,12 +79,6 @@ export default async function TodayPage({
 
   const firstName = profile?.display_name?.split(" ")[0] ?? "";
   const ehPro = profile?.plan === "pro";
-
-  // A comunidade já existe e tem o seu separador; o que continua a caminho é
-  // só o assistente.
-  const tools = [
-    { icon: <Sparkle className="size-4.5" />, ...pick(copy.tools, "assistant") },
-  ];
 
   return (
     <>
@@ -193,39 +188,17 @@ export default async function TodayPage({
           )}
         </section>
 
-        <ListGroup title={copy.toolsTitle}>
-          {tools.map((tool) => (
-            <ListRow
-              key={tool.label}
-              icon={tool.icon}
-              label={tool.label}
-              detail={tool.detail}
-              trailing={<Badge>{dict.common.soon}</Badge>}
-            />
-          ))}
-        </ListGroup>
+        {/* O Professor não tem página: a linha abre o balão flutuante, o
+            mesmo que o botão no canto. Quem não tem PRO vê a etiqueta. */}
+        <section className="flex flex-col gap-3">
+          <h2 className="label-brand px-1 text-fg-subtle">{dict.professor.title}</h2>
+          <LinhaProfessor
+            label={dict.professor.title}
+            detail={dict.professor.rowDetail}
+            proBadge={ehPro ? null : dict.common.pro}
+          />
+        </section>
       </div>
     </>
   );
-}
-
-/** Extrai o par etiqueta/descrição de uma ferramenta do dicionário. */
-function pick(
-  tools: {
-    metronome: string;
-    metronomeBody: string;
-    readiness: string;
-    readinessBody: string;
-    assistant: string;
-    assistantBody: string;
-    community: string;
-    communityBody: string;
-    tutorials: string;
-    tutorialsBody: string;
-    points: string;
-    pointsBody: string;
-  },
-  key: "metronome" | "readiness" | "assistant" | "community" | "tutorials" | "points",
-) {
-  return { label: tools[key], detail: tools[`${key}Body` as const] };
 }
