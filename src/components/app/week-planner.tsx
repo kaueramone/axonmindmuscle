@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 
 import { Check } from "@/components/ui/icons";
+import { RoutineNameEditor } from "@/components/app/routine-name-editor";
 import { Alert, Card, ListGroup, ListRow, Spinner } from "@/components/ui/surface";
 import type { Locale } from "@/lib/i18n/config";
 import { t } from "@/lib/i18n/interpolate";
@@ -134,8 +135,17 @@ export function WeekPlanner({
           {lista.map((r) => (
             <Card key={r.id} className="flex flex-col gap-3">
               <div className="flex items-center justify-between gap-3">
-                <div className="flex min-w-0 flex-col">
-                  <span className="truncate text-callout text-fg">{r.name}</span>
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <RoutineNameEditor
+                    id={r.id}
+                    name={r.name}
+                    copy={copy}
+                    onSaved={(name) =>
+                      setLista((atual) =>
+                        atual.map((rotina) => rotina.id === r.id ? { ...rotina, name } : rotina),
+                      )
+                    }
+                  />
                   <span className="text-caption text-fg-subtle">
                     {t(copy.exercises, { n: r.exercises })}
                   </span>

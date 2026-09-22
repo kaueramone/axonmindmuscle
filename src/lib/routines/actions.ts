@@ -9,7 +9,7 @@ export type RoutineResult = { ok: boolean; id?: string; error?: string };
 /**
  * Guarda um treino já feito como rotina.
  *
- * Deliberadamente não há editor de rotinas. Construir um treino num formulário
+ * A composição da rotina vem da sessão. Construir um treino num formulário
  * antes de o fazer é trabalho a mais e, pior, é adivinhar: os alvos saem do que
  * a pessoa realmente conseguiu, não do que planeou numa segunda-feira. Treina
  * uma vez, guarda, e a partir daí há um eixo para comparar.
@@ -108,6 +108,36 @@ export async function saveRoutineFromSessionAction(
 
   revalidatePath("/", "layout");
   return { ok: true, id: rotina.id };
+}
+
+/** Renomeia apenas uma rotina ativa da pessoa autenticada. */
+export async function renameRoutineAction(
+  id: string,
+  nome: string,
+): Promise<RoutineResult> {
+  const limpo = typeof nome === "string" ? nome.trim() : "";
+  if (!limpo || limpo.length > 60) return { ok: false, error: "nome" };
+  if (typeof id !== "string" || !id) return { ok: false, error: "generico" };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "sessao" };
+
+  const { data, error } = await supabase
+    .from("routines")
+    .update({ name: limpo })
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .is("archived_at", null)
+    .select("id")
+    .maybeSingle();
+
+  if (error || !data) return { ok: false, error: "generico" };
+
+  revalidatePath("/", "layout");
+  return { ok: true, id: data.id };
 }
 
 /** Arquivar, nunca apagar: o histórico feito continua a ser comparável. */
