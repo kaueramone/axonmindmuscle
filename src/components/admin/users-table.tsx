@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 
 import { Alert, Badge, Spinner } from "@/components/ui/surface";
 import { setUserProAction, setUserRoleAction } from "@/lib/admin/actions";
+import { enableUserAffiliate, setAffiliate } from "@/lib/affiliates/actions";
 import type { UserRole } from "@/lib/supabase/types";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +20,7 @@ export type LinhaUtilizador = {
   proConcedido: boolean;
   createdAt: string;
   onboarded: boolean;
+  affiliate: { id: string; enabled: boolean } | null;
 };
 
 export function UsersTable({
@@ -64,6 +66,29 @@ export function UsersTable({
             {l.plan === "pro" ? (
               <Badge tone="accent">{l.proConcedido ? "PRO dado" : "PRO"}</Badge>
             ) : null}
+
+            {l.affiliate?.enabled ? <Badge tone="accent">Afiliado</Badge> : null}
+            <button
+              type="button"
+              disabled={pendente}
+              aria-label={`${l.affiliate?.enabled ? "Desativar afiliado" : "Tornar afiliado"}: ${l.name || "Sem nome"}`}
+              onClick={() => iniciar(async () => {
+                setErro(null);
+                try {
+                  const result = l.affiliate
+                    ? await setAffiliate(l.affiliate.id, !l.affiliate.enabled)
+                    : await enableUserAffiliate(l.id);
+                  if (!result.ok) setErro("Não foi possível atualizar o afiliado. Tente novamente.");
+                  else router.refresh();
+                } catch { setErro("Não foi possível atualizar o afiliado. Tente novamente."); }
+              })}
+              className={cn(
+                "shrink-0 rounded-full border px-3.5 py-1.5 text-caption transition-colors disabled:opacity-50",
+                l.affiliate?.enabled ? "border-accent bg-accent-soft text-accent" : "border-hairline text-fg-muted hover:text-fg",
+              )}
+            >
+              {l.affiliate?.enabled ? "Desativar afiliado" : l.affiliate ? "Reativar afiliado" : "Tornar afiliado"}
+            </button>
 
             {/* Só se dá e se tira o PRO dado à mão. Quem está mesmo a pagar
                 não aparece aqui como removível: cancelar uma subscrição é no
@@ -128,6 +153,8 @@ export function UsersTable({
       ) : null}
 
       <p className="text-caption leading-relaxed text-fg-subtle">
+        Tornar afiliado libera o link de divulgação e o painel de indicações no perfil.
+        Desativar impede novos cadastros pelo link e preserva o histórico e as comissões pendentes.{" "}
         O papel de administrador dá acesso a todos os números da plataforma e à
         edição do catálogo. Ninguém se pode promover a si próprio: a base de dados
         rejeita a alteração feita pela própria conta.

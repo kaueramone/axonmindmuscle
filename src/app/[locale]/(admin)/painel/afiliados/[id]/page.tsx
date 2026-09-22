@@ -12,7 +12,6 @@ import { Card } from "@/components/ui/surface";
 import { AffiliateHistory } from "@/components/affiliates/dashboard";
 import {
   AffiliatePayment,
-  AffiliateToggle,
 } from "@/components/affiliates/controls";
 import { SITE_URL } from "@/lib/utils";
 
@@ -47,7 +46,6 @@ export default async function AdminAffiliatePage({
         {copy.back}
       </Link>
       <h1 className="text-large">{dashboard.name}</h1>
-      <AffiliateToggle id={id} enabled={dashboard.enabled} copy={copy} />
       <Card>
         <AffiliatePayment id={id} available={dashboard.pending} copy={copy} />
       </Card>

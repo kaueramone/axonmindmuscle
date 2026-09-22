@@ -9,6 +9,8 @@ import type { Database } from "@/lib/supabase/types";
  *
  * Usado no webhook Stripe e nas operações de atribuição de afiliados sem
  * sessão. As mutações de administração usam RPCs com a sessão do admin.
+ * Também resolve o e-mail de uma conta selecionada para afiliação, somente
+ * depois da verificação de is_admin() na sessão do administrador.
  * Nunca importar a partir de código que corra no browser.
  */
 export function createAdminClient() {

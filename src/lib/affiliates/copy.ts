@@ -5,6 +5,15 @@ export function affiliateCopy(locale: Locale) {
   return {
     title: "Área de afiliado",
     adminTitle: "Afiliados",
+    adminIntro: "Resumo das indicações e conversões PRO de todos os afiliados.",
+    totalAffiliates: "Total de afiliados",
+    activeAffiliates: "Afiliados ativos",
+    pendingCommissions: "Comissões por pagar",
+    paidCommissions: "Comissões pagas",
+    manageUsers: br ? "Gerenciar afiliados em Usuários" : "Gerir afiliados em Utilizadores",
+    byAffiliate: "Resultados por afiliado",
+    profileTitle: br ? "Você é afiliado AXON" : "És afiliado AXON",
+    profileBody: br ? "Acesse seu link de divulgação e acompanhe suas indicações, vendas PRO e histórico de comissões." : "Acede ao teu link de divulgação e acompanha as tuas indicações, vendas PRO e histórico de comissões.",
     intro:
       "Acompanhe os cadastros pelo seu link e as contas que se tornaram PRO.",
     rules:

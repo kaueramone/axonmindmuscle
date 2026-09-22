@@ -54,9 +54,13 @@ export default async function ProfilePage({
       />
 
       <div className="mx-auto flex max-w-2xl flex-col gap-8 px-5 pt-6">
-        {affiliate ? <ButtonLink href={route(locale, "affiliate")} variant="secondary" fullWidth>
-          {affiliateCopy(locale).profileLink}
-        </ButtonLink> : null}
+        {affiliate ? <Card className="flex flex-col gap-3">
+          <h2 className="text-headline">{affiliateCopy(locale).title}</h2>
+          <p className="text-callout text-fg-muted">{affiliateCopy(locale).profileBody}</p>
+          <ButtonLink href={route(locale, "affiliate")} variant="secondary" fullWidth>
+            {affiliateCopy(locale).profileLink}
+          </ButtonLink>
+        </Card> : null}
         <ProfileForm profile={profile} dict={dict} locale={locale} />
 
         {/* O plano vive aqui e não só nas definições: é no perfil que a pessoa

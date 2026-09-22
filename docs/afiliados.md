@@ -2,9 +2,13 @@
 
 ## Uso
 
-- Administração → Afiliados: habilitar pelo e-mail de uma conta já existente.
+- Administração → Utilizadores: usar “Tornar afiliado” na conta escolhida;
+  nesse mesmo local é possível desativar e reativar a afiliação.
+- Administração → Afiliados: resumo global de afiliados, cadastros indicados,
+  vendas PRO e comissões por pagar, seguido dos resultados por afiliado.
+  Os totais incluem todas as páginas da lista, não apenas as 25 contas visíveis.
 - Cada afiliado recebe um link `/r/<código>?locale=pt-br` (ou `pt-pt`).
-- Perfil → Minhas indicações e vendas: link, cadastros, vendas, contas por pagar,
+- Perfil → card Área de afiliado → Minhas indicações e vendas: link, cadastros, vendas, contas por pagar,
   contas pagas, histórico de indicações e histórico dos pagamentos.
 - Administração → Afiliados → Ver histórico e pagamentos: informar a quantidade,
   revisar e confirmar **depois** de pagar a comissão fora da plataforma.

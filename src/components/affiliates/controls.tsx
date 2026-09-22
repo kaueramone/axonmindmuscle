@@ -3,11 +3,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Alert, Spinner } from "@/components/ui/surface";
-import {
-  enableAffiliate,
-  payAffiliate,
-  setAffiliate,
-} from "@/lib/affiliates/actions";
+import { payAffiliate } from "@/lib/affiliates/actions";
 import type { AffiliateCopy } from "@/lib/affiliates/copy";
 import { t } from "@/lib/i18n/interpolate";
 
@@ -56,99 +52,6 @@ export function ReferralLink({
       <p role="status" className="text-footnote text-fg-muted">
         {message}
       </p>
-    </div>
-  );
-}
-
-export function EnableAffiliate({
-  copy,
-  base,
-}: {
-  copy: AffiliateCopy;
-  base: string;
-}) {
-  const [email, setEmail] = useState("");
-  const [error, setError] = useState("");
-  const [pending, start] = useTransition();
-  const router = useRouter();
-  return (
-    <form
-      className="flex flex-col gap-3"
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (pending) return;
-        setError("");
-        start(async () => {
-          try {
-            const result = await enableAffiliate(email);
-            if (!result.ok) {
-              setError(errorText(copy, result.error));
-              return;
-            }
-            router.push(`${base}/${result.id}`);
-            router.refresh();
-          } catch {
-            setError(copy.failed);
-          }
-        });
-      }}
-    >
-      <h2 className="text-headline">{copy.register}</h2>
-      <p className="text-footnote text-fg-muted">{copy.registerHint}</p>
-      <label htmlFor="affiliate-email">{copy.email}</label>
-      <input
-        id="affiliate-email"
-        type="email"
-        required
-        maxLength={254}
-        value={email}
-        disabled={pending}
-        onChange={(e) => setEmail(e.target.value)}
-        className={inputClass}
-      />
-      <Button disabled={pending}>
-        {pending ? <Spinner /> : null}
-        {copy.register}
-      </Button>
-      {error ? <Alert tone="danger">{error}</Alert> : null}
-    </form>
-  );
-}
-
-export function AffiliateToggle({
-  id,
-  enabled,
-  copy,
-}: {
-  id: string;
-  enabled: boolean;
-  copy: AffiliateCopy;
-}) {
-  const [pending, start] = useTransition();
-  const [error, setError] = useState("");
-  const router = useRouter();
-  return (
-    <div className="flex flex-col gap-2">
-      <Button
-        variant="secondary"
-        disabled={pending}
-        onClick={() => {
-          setError("");
-          start(async () => {
-            try {
-              const result = await setAffiliate(id, !enabled);
-              if (!result.ok) setError(copy.failed);
-              else router.refresh();
-            } catch {
-              setError(copy.failed);
-            }
-          });
-        }}
-      >
-        {pending ? <Spinner /> : null}
-        {enabled ? copy.disable : copy.enable}
-      </Button>
-      {error ? <Alert tone="danger">{error}</Alert> : null}
     </div>
   );
 }
