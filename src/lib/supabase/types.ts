@@ -18,6 +18,12 @@ export type Database = {
   };
   public: {
     Tables: {
+      affiliates: {
+        Row: { id: string; user_id: string | null; name: string; code: string; enabled: boolean; created_at: string; created_by: string | null };
+        Insert: { user_id: string; name: string; code?: string; enabled?: boolean; created_by?: string };
+        Update: { enabled?: boolean };
+        Relationships: [];
+      };
       exercises: {
         Row: {
           attribution: string | null;
@@ -596,6 +602,14 @@ export type Database = {
       };
     };
     Functions: {
+      affiliate_visit: { Args: { p_code: string; p_existing?: string }; Returns: string | null };
+      affiliate_attach: { Args: { p_user: string; p_visit: string }; Returns: undefined };
+      affiliate_convert: { Args: { p_user: string; p_invoice: string; p_subscription: string; p_paid_at: string }; Returns: undefined };
+      admin_enable_affiliate: { Args: { p_email: string }; Returns: string };
+      admin_set_affiliate: { Args: { p_affiliate: string; p_enabled: boolean }; Returns: undefined };
+      admin_pay_affiliate: { Args: { p_affiliate: string; p_quantity: number; p_request: string }; Returns: string };
+      affiliate_dashboard: { Args: { p_affiliate?: string; p_ref_page?: number; p_pay_page?: number }; Returns: Json };
+      admin_affiliates: { Args: { p_page?: number }; Returns: Json };
       is_admin: { Args: Record<string, never>; Returns: boolean };
       pode_publicar: { Args: Record<string, never>; Returns: boolean };
       tocar_presenca: { Args: Record<string, never>; Returns: undefined };

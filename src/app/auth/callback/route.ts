@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { defaultLocale, isLocale } from "@/lib/i18n/config";
 import { route, safeNext } from "@/lib/routes";
 import { createClient } from "@/lib/supabase/server";
+import { attachOAuthReferral } from "@/lib/affiliates/attribution";
 
 /**
  * Ponto de retorno do OAuth (Google). O Supabase envia um `code` que é
@@ -39,6 +40,11 @@ export async function GET(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (user) {
+    try { await attachOAuthReferral(user.id); }
+    catch (error) {
+      // Keep the cookie: onboarding retries before completing the registration.
+      console.error("[afiliados] atribuição OAuth pendente", error);
+    }
     const { data: profile } = await supabase
       .from("profiles")
       .select("onboarding_completed_at")

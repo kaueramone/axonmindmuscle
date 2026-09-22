@@ -7,9 +7,9 @@ import type { Database } from "@/lib/supabase/types";
 /**
  * Cliente com a chave de service role — passa ao lado do RLS.
  *
- * Existe por uma razão só: o webhook do Stripe chega sem sessão de
- * utilizador e tem de escrever na tabela de subscrições. Não o importes em
- * mais lado nenhum, e nunca a partir de código que corra no browser.
+ * Usado no webhook Stripe e nas operações de atribuição de afiliados sem
+ * sessão. As mutações de administração usam RPCs com a sessão do admin.
+ * Nunca importar a partir de código que corra no browser.
  */
 export function createAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

@@ -499,7 +499,7 @@ checkout não o queima.
    ativo para pagamentos avulsos, mas não aparecerá no checkout de subscrição.
 4. **Stripe → Webhooks**: destino `https://<domínio>/api/stripe/webhook`,
    eventos `customer.subscription.created`, `.updated`, `.deleted` e
-   `checkout.session.completed`. Copia o segredo.
+   `checkout.session.completed` e `invoice.paid`. Copia o segredo.
 5. **Vercel → Environment Variables**: preenche as chaves listadas em
    `.env.example`. Começa pelas de **teste**.
 

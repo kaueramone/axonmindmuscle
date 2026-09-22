@@ -2,6 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
+import { REFERRAL_COOKIE, referralToken } from "@/lib/affiliates/shared";
+import { attachOAuthReferral } from "@/lib/affiliates/attribution";
 
 import { defaultLocale, isLocale, marketByLocale, type Locale } from "@/lib/i18n/config";
 import { route, safeNext } from "@/lib/routes";
@@ -120,6 +123,7 @@ export async function signUpAction(
         display_name: name.slice(0, 60),
         locale,
         market: marketByLocale[locale].market,
+        affiliate_visit: referralToken((await cookies()).get(REFERRAL_COOKIE)?.value),
       },
     },
   });
@@ -313,6 +317,12 @@ export async function completeOnboardingAction(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "sessionExpired" };
+
+  // Retry an OAuth attribution if the callback encountered a transient error.
+  if (user.app_metadata.provider === "google") {
+    try { await attachOAuthReferral(user.id); }
+    catch { return { ok: false, error: "generic" }; }
+  }
 
   const name = String(formData.get("display_name") ?? "").trim();
   if (name.length < 2) return { ok: false, error: "nameRequired" };

@@ -93,6 +93,7 @@ export async function startCheckoutAction(formData: FormData): Promise<void> {
       subscription_data: {
         metadata: {
           user_id: user.id,
+          plan: "pro",
           ...(aplicarFundadores ? { founders_code: FOUNDERS_CODE } : {}),
         },
       },

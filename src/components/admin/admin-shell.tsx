@@ -16,6 +16,7 @@ const LINKS = [
   { key: "", label: "Visão geral", Icon: Chart },
   { key: "exercicios", label: "Exercícios", Icon: Bolt },
   { key: "utilizadores", label: "Utilizadores", Icon: Users },
+  { key: "afiliados", label: "Afiliados", Icon: Users },
   { key: "comunidade", label: "Comunidade", Icon: Alert },
 ] as const;
 

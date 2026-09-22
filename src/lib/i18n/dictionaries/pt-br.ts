@@ -58,7 +58,7 @@ const dictionary: Dict = {
   },
 
   privacyPolicy: {
-    updated: "Atualizada em 16 de setembro de 2026.",
+    updated: "Atualizada em 22 de setembro de 2026.",
     intro:
       "Esta política explica quais dados a AXON Mind-Muscle guarda, para quê, com que base legal e por quanto tempo. Está escrita para ser lida, não para ser aceita às cegas.",
     sections: [
@@ -123,7 +123,7 @@ const dictionary: Dict = {
       {
         title: "Cookies e dispositivo",
         body: [
-          "Usamos apenas os cookies necessários para manter a sessão iniciada e lembrar o tema. Não há cookies de publicidade nem de rastreamento entre sites.",
+          "Usamos cookies para manter a sessão iniciada e lembrar as preferências. Ao abrir um link de afiliado, guardamos neste site um identificador de indicação por até 30 dias, para associar um novo cadastro ao afiliado. Depois do cadastro, esse vínculo fica salvo na conta para contabilizar a primeira compra do PRO. O painel do afiliado mostra códigos de indicação, datas e totais, sem divulgar seu nome ou e-mail.",
           "As fotos de progresso, quando essa função existir, ficam guardadas só no seu dispositivo e nunca são enviadas para os nossos servidores.",
         ],
       },

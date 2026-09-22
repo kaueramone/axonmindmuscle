@@ -4,6 +4,7 @@ import type Stripe from "stripe";
 import { stripe } from "@/lib/stripe/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Enums } from "@/lib/supabase/types";
+import { recordAffiliateInvoice } from "@/lib/affiliates/conversion";
 
 /**
  * Webhook do Stripe.
@@ -89,6 +90,9 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    if (evento.type === "invoice.paid") {
+      await recordAffiliateInvoice(evento.data.object as Stripe.Invoice, supabase);
+    }
     if (EVENTOS_DE_SUBSCRICAO.has(evento.type)) {
       const sub = evento.data.object as Stripe.Subscription;
       const item = sub.items.data[0];

@@ -19,6 +19,7 @@ export const segments = {
   community: "comunidade",
   profile: "perfil",
   account: "conta",
+  affiliate: "afiliado",
   admin: "painel",
   plans: "planos",
   terms: "termos",
@@ -103,6 +104,7 @@ export const protectedSegments: string[] = [
   segments.community,
   segments.profile,
   segments.account,
+  segments.affiliate,
   segments.admin,
   segments.plans,
 ];

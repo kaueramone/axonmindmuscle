@@ -10,6 +10,7 @@ import { getDictionary } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n/config";
 import { route } from "@/lib/routes";
 import { createClient } from "@/lib/supabase/server";
+import { affiliateCopy } from "@/lib/affiliates/copy";
 
 export const metadata: Metadata = { title: "Perfil", robots: { index: false } };
 
@@ -37,6 +38,8 @@ export default async function ProfilePage({
 
   if (!profile) redirect(route(locale, "onboarding"));
 
+  const { data: affiliate } = await supabase.from("affiliates").select("id").eq("user_id", user.id).maybeSingle();
+
   return (
     <>
       <AppHeader
@@ -51,6 +54,9 @@ export default async function ProfilePage({
       />
 
       <div className="mx-auto flex max-w-2xl flex-col gap-8 px-5 pt-6">
+        {affiliate ? <ButtonLink href={route(locale, "affiliate")} variant="secondary" fullWidth>
+          {affiliateCopy(locale).profileLink}
+        </ButtonLink> : null}
         <ProfileForm profile={profile} dict={dict} locale={locale} />
 
         {/* O plano vive aqui e não só nas definições: é no perfil que a pessoa

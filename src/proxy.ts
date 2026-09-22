@@ -121,6 +121,6 @@ export const config = {
      * - api
      * - ficheiros estáticos com extensão
      */
-    "/((?!_next/static|_next/image|auth/|api/|.*\\.[\\w]+$).*)",
+    "/((?!_next/static|_next/image|auth/|api/|r/|.*\\.[\\w]+$).*)",
   ],
 };
