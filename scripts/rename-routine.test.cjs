@@ -6,7 +6,7 @@ const ts = require("typescript");
 
 const source = ts.transpileModule(
   readFileSync(resolve(__dirname, "../src/lib/routines/actions.ts"), "utf8"),
-  { compilerOptions: { module: ts.ModuleKind.CommonJS } },
+  { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } },
 ).outputText;
 
 // Exercise authorization and failure handling without touching production data.
@@ -40,7 +40,7 @@ function setup({ user = { id: "owner" }, rows, fail = false } = {}) {
     if (name === "@/lib/supabase/server") return { createClient: async () => { clients++; return client; } };
     throw new Error(`Unexpected dependency: ${name}`);
   }, exports);
-  return { rename: exports.renameRoutineAction, rows, invalidations, clients: () => clients };
+  return { weekdays: exports.setRoutineWeekdaysAction, rename: exports.renameRoutineAction, rows, invalidations, clients: () => clients };
 }
 
 test("renames own routine, trims whitespace and invalidates dependent pages", async () => {
@@ -93,4 +93,27 @@ test("does not report success when the database rejects the update", async () =>
   assert.equal((await s.rename("routine", "Pernas")).ok, false);
   assert.equal(s.rows[0].name, "Terça 25/8/3026");
   assert.equal(s.invalidations.length, 0);
+});
+
+
+test("weekday changes persist Monday and only succeed for an active owned row", async () => {
+  const s = setup();
+  assert.equal((await s.weekdays("routine", [3, 1, 1, 7, 0, 8])).ok, true);
+  assert.deepEqual(s.rows[0].weekdays, [1, 3, 7]);
+  assert.deepEqual(s.invalidations, [["/", "layout"]]);
+  assert.equal((await s.weekdays("missing", [1])).ok, false);
+  s.rows[0].archived_at = "2026-09-28";
+  assert.equal((await s.weekdays("routine", [2])).ok, false);
+  assert.equal((await setup({ user: { id: "other" } }).weekdays("routine", [1])).ok, false);
+  assert.equal((await setup({ user: null }).weekdays("routine", [1])).ok, false);
+  assert.equal((await setup({ fail: true }).weekdays("routine", [1])).ok, false);
+});
+
+test("clearing the schedule works and malformed input cannot erase it", async () => {
+  const s = setup();
+  await s.weekdays("routine", [1]);
+  assert.equal((await s.weekdays("routine", null)).ok, false);
+  assert.deepEqual(s.rows[0].weekdays, [1]);
+  assert.equal((await s.weekdays("routine", [])).ok, true);
+  assert.deepEqual(s.rows[0].weekdays, []);
 });

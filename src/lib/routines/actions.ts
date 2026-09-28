@@ -169,6 +169,7 @@ export async function setRoutineWeekdaysAction(
   id: string,
   weekdays: number[],
 ): Promise<RoutineResult> {
+  if (typeof id !== "string" || !id || !Array.isArray(weekdays)) return { ok: false, error: "generico" };
   const supabase = await createClient();
   const {
     data: { user },
@@ -179,13 +180,16 @@ export async function setRoutineWeekdaysAction(
     .filter((d) => Number.isInteger(d) && d >= 1 && d <= 7)
     .sort((a, b) => a - b);
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("routines")
     .update({ weekdays: dias })
-    .eq("id", String(id))
-    .eq("user_id", user.id);
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .is("archived_at", null)
+    .select("id")
+    .maybeSingle();
 
-  if (error) return { ok: false, error: "generico" };
+  if (error || !data) return { ok: false, error: "generico" };
 
   revalidatePath("/", "layout");
   return { ok: true };

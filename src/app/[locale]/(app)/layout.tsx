@@ -2,6 +2,8 @@ import { assertLocale } from "@/lib/i18n/config";
 import { redirect } from "next/navigation";
 
 import { ProfessorAxon } from "@/components/app/professor/professor-axon";
+import { WorkoutRecovery } from "@/components/workout/workout-recovery";
+import { loadOpenWorkout } from "@/lib/workout/recovery";
 import { TabBar } from "@/components/app/tab-bar";
 import { contarNaoLidas } from "@/lib/community/feed";
 import { getDictionary } from "@/lib/i18n";
@@ -38,9 +40,12 @@ export default async function AppLayout({
 
   // Um ponto no separador da comunidade quando há notificações por ler. É
   // uma contagem barata (índice parcial) e evita o polling do lado do cliente.
-  const naoLidas = await contarNaoLidas(supabase, user.id);
+  const [naoLidas, openWorkout] = await Promise.all([
+    contarNaoLidas(supabase, user.id), loadOpenWorkout(supabase, user.id),
+  ]);
 
   return (
+    <WorkoutRecovery key={user.id} userId={user.id} locale={locale} copy={dict.workout.recovery} initialDraft={openWorkout}>
     <div className="min-h-dvh pb-24">
       {children}
       <TabBar
@@ -62,5 +67,6 @@ export default async function AppLayout({
         copy={dict.professor}
       />
     </div>
+    </WorkoutRecovery>
   );
 }

@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Tempo } from "@/lib/workout/use-metronome";
 
 export type PendingSet = {
+  id?: string;
   session_id: string;
   user_id: string;
   exercise_id: string | null;
@@ -49,162 +50,151 @@ const TIMEOUT_MS = 5000;
 
 function read<T>(key: string): T[] {
   try {
-    return JSON.parse(localStorage.getItem(key) ?? "[]") as T[];
+    const value = JSON.parse(localStorage.getItem(key) ?? "[]");
+    return Array.isArray(value) ? value as T[] : [];
   } catch {
     return [];
   }
 }
 
 function write<T>(key: string, valor: T[]) {
-  try {
-    localStorage.setItem(key, JSON.stringify(valor));
-  } catch {
-    // Armazenamento cheio ou bloqueado: seguimos sem fila.
-  }
+  // Do not claim success when the browser cannot keep the only durable copy.
+  localStorage.setItem(key, JSON.stringify(valor));
 }
 
-/** Corre a promessa com limite de tempo — sem isto, um pedido pendurado trava a série. */
-async function comLimite<T>(promessa: PromiseLike<T>): Promise<T | null> {
-  return Promise.race([
-    Promise.resolve(promessa),
-    new Promise<null>((resolve) => setTimeout(() => resolve(null), TIMEOUT_MS)),
-  ]).catch(() => null);
+type TerminalSession = {
+  id: string;
+  user_id: string;
+  action: "finish" | "discard";
+  ended_at: string;
+  synced?: boolean;
+};
+const TERMINAL_KEY = "axon-sessoes-terminadas-v1";
+const flushing = new Map<string, Promise<{ sessions: number; sets: number }>>();
+const revisions = new Map<string, number>();
+
+function queueChanged(userId: string) {
+  revisions.set(userId, (revisions.get(userId) ?? 0) + 1);
+  void flushQueue(userId).catch(() => {});
 }
 
-export function pendingCount(): number {
-  return read<PendingSet>(SETS_KEY).length;
+export function isSessionClosed(sessionId: string, userId: string): boolean {
+  return read<TerminalSession>(TERMINAL_KEY).some((s) => s.id === sessionId && s.user_id === userId);
 }
 
-/**
- * Envia o que estiver em fila. As sessões vão primeiro: as séries têm uma
- * chave estrangeira para elas e falhariam se a sessão ainda não existisse.
- */
-export async function flushQueue(): Promise<{ sessions: number; sets: number }> {
-  const sessoes = read<PendingSession>(SESSIONS_KEY);
-  const series = read<PendingSet>(SETS_KEY);
-  if (sessoes.length === 0 && series.length === 0) return { sessions: 0, sets: 0 };
+export function pendingCount(userId: string): number {
+  return read<PendingSet>(SETS_KEY).filter((s) => s.user_id === userId).length;
+}
 
+/** Persist before sending; stable IDs make retries safe even after a lost response. */
+export function flushQueue(userId: string): Promise<{ sessions: number; sets: number }> {
+  const active = flushing.get(userId);
+  if (active) return active;
+  const revision = revisions.get(userId);
+  const run = drainQueue(userId).finally(() => {
+    flushing.delete(userId);
+    // A write can arrive after the last read but before this promise settles.
+    if (revisions.get(userId) !== revision) void flushQueue(userId).catch(() => {});
+  });
+  flushing.set(userId, run);
+  return run;
+}
+
+async function drainQueue(userId: string): Promise<{ sessions: number; sets: number }> {
   const supabase = createClient();
-
-  if (sessoes.length > 0) {
-    const resultado = await comLimite(
-      supabase.from("workout_sessions").upsert(sessoes, { onConflict: "id" }),
-    );
-    if (!resultado || resultado.error) return { sessions: 0, sets: 0 };
-    write(SESSIONS_KEY, []);
+  const count = { sessions: 0, sets: 0 };
+  // Each pass rereads storage so writes made while a request is in flight survive.
+  for (;;) {
+    const sessions = read<PendingSession>(SESSIONS_KEY);
+    const session = sessions.find((s) => s.user_id === userId);
+    if (session) {
+      const { error } = await supabase.from("workout_sessions")
+        .upsert(session, { onConflict: "id", ignoreDuplicates: true })
+        .abortSignal(AbortSignal.timeout(TIMEOUT_MS));
+      if (error) return count;
+      write(SESSIONS_KEY, read<PendingSession>(SESSIONS_KEY).filter((s) => s.id !== session.id));
+      count.sessions++;
+      continue;
+    }
+    const sets = read<PendingSet>(SETS_KEY);
+    const set = sets.find((s) => s.user_id === userId);
+    if (set) {
+      // Upgrade entries left by older app versions before sending them.
+      if (!set.id) { set.id = crypto.randomUUID(); write(SETS_KEY, sets); }
+      const { error } = await supabase.from("workout_sets")
+        .upsert(set, { onConflict: "id", ignoreDuplicates: true })
+        .abortSignal(AbortSignal.timeout(TIMEOUT_MS));
+      if (error) return count;
+      write(SETS_KEY, read<PendingSet>(SETS_KEY).filter((s) => s.id !== set.id));
+      count.sets++;
+      continue;
+    }
+    const terminal = read<TerminalSession>(TERMINAL_KEY).find((s) => s.user_id === userId && !s.synced);
+    if (!terminal) return count;
+    if (terminal.action === "discard") {
+      const { error } = await supabase.from("workout_sets").delete()
+        .eq("session_id", terminal.id).eq("user_id", userId)
+        .abortSignal(AbortSignal.timeout(TIMEOUT_MS));
+      if (error) return count;
+    }
+    const query = terminal.action === "discard"
+      ? supabase.from("workout_sessions").delete()
+      : supabase.from("workout_sessions").update({ ended_at: terminal.ended_at });
+    const { error } = await query.eq("id", terminal.id).eq("user_id", userId)
+      .abortSignal(AbortSignal.timeout(TIMEOUT_MS));
+    if (error) return count;
+    write(TERMINAL_KEY, read<TerminalSession>(TERMINAL_KEY).map((s) =>
+      s.id === terminal.id && s.user_id === userId ? { ...s, synced: true } : s));
   }
-
-  if (series.length > 0) {
-    const resultado = await comLimite(supabase.from("workout_sets").insert(series));
-    if (!resultado || resultado.error) return { sessions: sessoes.length, sets: 0 };
-    write(SETS_KEY, []);
-  }
-
-  return { sessions: sessoes.length, sets: series.length };
 }
 
-/* ------------------------------------------------------------------
-   Operações
-   ------------------------------------------------------------------ */
-
-/**
- * Abre uma sessão. Devolve sempre um identificador: se o servidor não
- * responder a tempo, geramos um localmente e a sessão sobe depois. O
- * utilizador nunca fica à espera para começar a treinar.
- */
-export async function startSession(
-  userId: string,
-  routineId: string | null = null,
-): Promise<{ id: string; online: boolean }> {
-  const supabase = createClient();
-
-  const resultado = await comLimite(
-    supabase
-      .from("workout_sessions")
-      .insert({ user_id: userId, routine_id: routineId })
-      .select("id")
-      .single(),
-  );
-
-  if (resultado && !resultado.error && resultado.data) {
-    return { id: resultado.data.id, online: true };
-  }
-
-  const local = crypto.randomUUID();
-  write<PendingSession>(SESSIONS_KEY, [
-    ...read<PendingSession>(SESSIONS_KEY),
-    {
-      id: local,
-      user_id: userId,
-      started_at: new Date().toISOString(),
-      routine_id: routineId,
-    },
-  ]);
-  return { id: local, online: false };
+export async function startSession(userId: string, routineId: string | null = null) {
+  const id = crypto.randomUUID();
+  write<PendingSession>(SESSIONS_KEY, [...read<PendingSession>(SESSIONS_KEY), {
+    id, user_id: userId, started_at: new Date().toISOString(), routine_id: routineId,
+  }]);
+  queueChanged(userId);
+  return { id, online: navigator.onLine };
 }
 
-/**
- * Regista uma série. Nunca falha do ponto de vista do utilizador: se a rede
- * não colaborar, fica em fila local e sobe assim que houver ligação.
- */
 export async function logSet(
   set: Omit<PendingSet, "completed_at"> & { completed_at?: string },
 ): Promise<{ persisted: boolean }> {
-  const linha: PendingSet = {
-    ...set,
-    completed_at: set.completed_at ?? new Date().toISOString(),
+  if (isSessionClosed(set.session_id, set.user_id)) throw new Error("Workout already closed");
+  const row: PendingSet = {
+    ...set, id: set.id ?? crypto.randomUUID(), completed_at: set.completed_at ?? new Date().toISOString(),
   };
-
-  // Se há sessões por criar, esta série tem de esperar por elas.
-  const sessoesPendentes = read<PendingSession>(SESSIONS_KEY).length > 0;
-
-  if (!sessoesPendentes) {
-    const supabase = createClient();
-    const resultado = await comLimite(supabase.from("workout_sets").insert(linha));
-    if (resultado && !resultado.error) {
-      void flushQueue();
-      return { persisted: true };
-    }
-  }
-
-  write<PendingSet>(SETS_KEY, [...read<PendingSet>(SETS_KEY), linha]);
+  const pending = read<PendingSet>(SETS_KEY);
+  if (!pending.some((s) => s.id === row.id)) write(SETS_KEY, [...pending, row]);
+  queueChanged(set.user_id);
   return { persisted: false };
 }
 
-/**
- * Esforço percebido da sessão. É melhor esforço: se falhar, perde-se o número
- * e não a sessão — não vale a pena pôr isto na fila de escoamento.
- */
-export async function setSessionRpe(
-  sessionId: string,
-  userId: string,
-  rpe: number,
-): Promise<void> {
-  // A escala vai de 1 a 10 e alimenta o esforco medio do relatorio. Um numero
-  // fora disto nao e uma opiniao invulgar sobre o treino, e um pedido forjado.
+export async function setSessionRpe(sessionId: string, userId: string, rpe: number): Promise<void> {
   const valor = Math.round(rpe);
   if (!Number.isFinite(valor) || valor < 1 || valor > 10) return;
+  await flushQueue(userId).catch(() => {});
+  await createClient().from("workout_sessions").update({ rpe: valor })
+    .eq("id", sessionId).eq("user_id", userId).abortSignal(AbortSignal.timeout(TIMEOUT_MS));
+}
 
-  const supabase = createClient();
-  await comLimite(
-    supabase
-      .from("workout_sessions")
-      .update({ rpe: valor })
-      .eq("id", sessionId)
-      .eq("user_id", userId),
-  );
+/** Keep a local tombstone after sync as server-rendered pages may still be cached. */
+async function closeSession(sessionId: string, userId: string, action: TerminalSession["action"]) {
+  const terminals = read<TerminalSession>(TERMINAL_KEY);
+  if (!terminals.some((s) => s.id === sessionId && s.user_id === userId)) {
+    write(TERMINAL_KEY, [...terminals, {
+      id: sessionId, user_id: userId, action, ended_at: new Date().toISOString(),
+    }]);
+  }
+  queueChanged(userId);
 }
 
 export async function endSession(sessionId: string, userId: string): Promise<void> {
-  await flushQueue();
-  const supabase = createClient();
-  await comLimite(
-    supabase
-      .from("workout_sessions")
-      .update({ ended_at: new Date().toISOString() })
-      .eq("id", sessionId)
-      .eq("user_id", userId),
-  );
+  await closeSession(sessionId, userId, "finish");
+}
+
+export async function discardSession(sessionId: string, userId: string): Promise<void> {
+  await closeSession(sessionId, userId, "discard");
 }
 
 export function tempoToColumns(tempo: Tempo) {

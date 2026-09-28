@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
+import { RefreshLocalDay } from "@/components/app/refresh-local-day";
 import { AppHeader } from "@/components/app/app-header";
 import { WeekPlanner, type RotinaPlaneada } from "@/components/app/week-planner";
 import { getDictionary } from "@/lib/i18n";
 import { assertLocale } from "@/lib/i18n/config";
 import { route } from "@/lib/routes";
 import { createClient } from "@/lib/supabase/server";
-import { isoWeekday } from "@/lib/workout/periods";
+import { isoWeekday, localDate } from "@/lib/workout/periods";
 
 export const metadata: Metadata = { title: "A minha semana", robots: { index: false } };
 
@@ -47,6 +48,7 @@ export default async function WeekPage({
 
   return (
     <>
+      <RefreshLocalDay day={localDate(new Date(), perfil?.timezone ?? "Europe/Lisbon")} timezone={perfil?.timezone ?? "Europe/Lisbon"} />
       <AppHeader
         title={copy.title}
         locale={locale}
@@ -61,6 +63,7 @@ export default async function WeekPage({
       <div className="mx-auto flex max-w-2xl flex-col gap-6 px-5 pt-6">
         <p className="text-callout leading-relaxed text-fg-muted">{copy.intro}</p>
         <WeekPlanner
+          key={JSON.stringify(lista)}
           rotinas={lista}
           hoje={isoWeekday(new Date(), perfil?.timezone ?? "Europe/Lisbon")}
           copy={copy}

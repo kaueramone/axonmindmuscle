@@ -12,7 +12,10 @@ import { assertLocale } from "@/lib/i18n/config";
 import { route } from "@/lib/routes";
 import { prescriptionFor } from "@/lib/readiness/score";
 import { createClient } from "@/lib/supabase/server";
-import { localDate } from "@/lib/workout/periods";
+import { buildRoutinePlan, selectRoutine } from "@/lib/routines/plan";
+import { ButtonLink } from "@/components/ui/button";
+import { Alert } from "@/components/ui/surface";
+import { isoWeekday, localDate } from "@/lib/workout/periods";
 import type { LastPerformance, Zone } from "@/lib/workout/progression";
 import { RoutineList, type RoutineSummary } from "@/components/app/routine-list";
 
@@ -23,11 +26,11 @@ export default async function WorkoutPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ rotina?: string }>;
+  searchParams: Promise<{ rotina?: string; livre?: string }>;
 }) {
   const { locale: rawLocale } = await params;
   const locale = assertLocale(rawLocale);
-  const { rotina } = await searchParams;
+  const { rotina, livre } = await searchParams;
   const dict = await getDictionary(locale);
 
   const supabase = await createClient();
@@ -112,12 +115,14 @@ export default async function WorkoutPage({
   }
 
   // Treinos guardados, para repetir sem os voltar a montar.
-  const { data: rotinas } = await supabase
+  const { data: rotinas, error: routineError } = await supabase
     .from("routines")
-    .select("id, name, routine_exercises(count)")
+    .select("id, name, weekdays, routine_exercises(count)")
     .eq("user_id", user.id)
     .is("archived_at", null)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: true });
+
+  if (routineError) throw new Error("Unable to load routines");
 
   const routines: RoutineSummary[] = (rotinas ?? []).map((r) => ({
     id: r.id,
@@ -128,17 +133,17 @@ export default async function WorkoutPage({
 
   // Só aceitamos uma rotina que seja mesmo desta pessoa: o identificador vem
   // do endereço, e o endereço é escrito por quem quiser.
-  const routineId = rotina && routines.some((r) => r.id === rotina) ? rotina : null;
-
-  // Uma sessão por terminar significa treino a decorrer.
-  const { data: aberta } = await supabase
-    .from("workout_sessions")
-    .select("id")
-    .eq("user_id", user.id)
-    .is("ended_at", null)
-    .order("started_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const selected = selectRoutine(rotinas ?? [], rotina,
+    isoWeekday(new Date(), perfil?.timezone ?? "Europe/Lisbon"), livre === "1");
+  const routineId = selected?.id ?? null;
+  let routinePlan = null;
+  if (selected) {
+    const { data: entries, error } = await supabase.from("routine_exercises")
+      .select("exercise_id, position, target_sets, target_reps, target_duration_s")
+      .eq("routine_id", selected.id).order("position");
+    if (error) throw new Error("Unable to load routine exercises");
+    routinePlan = buildRoutinePlan(selected, entries ?? [], exercises);
+  }
 
   return (
     <>
@@ -154,16 +159,19 @@ export default async function WorkoutPage({
       />
 
       <div className="mx-auto flex max-w-2xl flex-col gap-7 px-5 pt-6">
-        {!aberta && !routineId ? (
+        {(
           <RoutineList routines={routines} copy={dict.workout.routines} locale={locale} />
-        ) : null}
+        )}
+        {routineId ? <ButtonLink variant="ghost" href={`${route(locale, "workout")}?livre=1`}>{dict.workout.routinePlan.free}</ButtonLink> : null}
+        {rotina && !selected && livre !== "1" ? <Alert tone="danger">{dict.workout.routinePlan.unavailable}</Alert> : null}
 
         <WorkoutRunner
+          key={routineId ?? "free"}
+          routinePlan={routinePlan}
           locale={locale}
           dict={dict}
           userId={user.id}
           exercises={exercises}
-          existingSessionId={aberta?.id ?? null}
           readiness={readiness}
           lastByExercise={lastByExercise}
           routineId={routineId}

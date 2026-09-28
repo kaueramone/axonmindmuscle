@@ -16,6 +16,7 @@ export type Tempo = {
 export type MetronomeState = "idle" | "running" | "paused" | "finished";
 
 type Options = {
+  initialElapsed?: number;
   tempo: Tempo;
   /** Repetições alvo. A série termina sozinha ao atingi-las. */
   targetReps: number;
@@ -40,14 +41,15 @@ export function useMetronome({
   sound,
   haptics,
   onFinished,
+  initialElapsed,
 }: Options) {
-  const [state, setState] = useState<MetronomeState>("idle");
+  const [state, setState] = useState<MetronomeState>(initialElapsed == null ? "idle" : "paused");
   const [phase, setPhase] = useState<Phase>("eccentric");
   const [phaseProgress, setPhaseProgress] = useState(0);
-  const [rep, setRep] = useState(0);
+  const [rep, setRep] = useState(() => Math.floor((initialElapsed ?? 0) / Math.max(tempo.eccentric + tempo.pause + tempo.concentric, 0.1)));
 
   const frame = useRef<number | null>(null);
-  const elapsedRef = useRef(0); // segundos já decorridos na série
+  const elapsedRef = useRef(initialElapsed ?? 0); // segundos já decorridos na série
   const lastTickRef = useRef(0); // performance.now() da última frame
   const lastPhaseRef = useRef<Phase | null>(null);
   const wakeLock = useRef<WakeLockSentinel | null>(null);
@@ -211,7 +213,10 @@ export function useMetronome({
     setPhase("eccentric");
   }, [releaseWakeLock]);
 
+  const getElapsed = useCallback(() => elapsedRef.current, []);
+
   return {
+    getElapsed,
     state,
     phase,
     phaseProgress,

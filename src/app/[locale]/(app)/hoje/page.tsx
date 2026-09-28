@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 
 import Link from "next/link";
 
+import { RefreshLocalDay } from "@/components/app/refresh-local-day";
 import { AppHeader } from "@/components/app/app-header";
 import { Greeting } from "@/components/app/greeting";
 import { LinhaProfessor } from "@/components/app/professor/linha-professor";
@@ -82,6 +83,7 @@ export default async function TodayPage({
 
   return (
     <>
+      <RefreshLocalDay day={hoje} timezone={profile?.timezone ?? "Europe/Lisbon"} />
       <AppHeader
         title={copy.title}
         locale={locale}

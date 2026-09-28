@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 
 import { Check } from "@/components/ui/icons";
 import { RoutineNameEditor } from "@/components/app/routine-name-editor";
@@ -42,6 +42,7 @@ export function WeekPlanner({
   copy: Dict["app"]["week"];
   locale: Locale;
 }) {
+  const saving = useRef(false);
   const [lista, setLista] = useState(rotinas);
   const [erro, setErro] = useState<string | null>(null);
   const [aGravar, iniciar] = useTransition();
@@ -50,6 +51,8 @@ export function WeekPlanner({
   const nomesDias = copy.days;
 
   function alternar(rotina: RotinaPlaneada, dia: number) {
+    if (saving.current) return;
+    saving.current = true;
     const antes = rotina.weekdays;
     const depois = antes.includes(dia)
       ? antes.filter((d) => d !== dia)
@@ -61,14 +64,16 @@ export function WeekPlanner({
     setErro(null);
     setPendente(rotina.id);
     iniciar(async () => {
-      const r = await setRoutineWeekdaysAction(rotina.id, depois);
-      if (!r.ok) {
+      try {
+        const r = await setRoutineWeekdaysAction(rotina.id, depois);
+        if (!r.ok) throw new Error("save failed");
+      } catch {
         setErro(copy.saveFailed);
         setLista((atual) =>
           atual.map((x) => (x.id === rotina.id ? { ...x, weekdays: antes } : x)),
         );
       }
-      setPendente(null);
+      finally { saving.current = false; setPendente(null); }
     });
   }
 
@@ -163,6 +168,7 @@ export function WeekPlanner({
                     <button
                       key={d}
                       type="button"
+                      disabled={aGravar}
                       aria-pressed={ativo}
                       onClick={() => alternar(r, d)}
                       className={cn(

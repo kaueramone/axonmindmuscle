@@ -4,7 +4,7 @@
  * Nome da cache do service worker onde ficam as páginas já autenticadas.
  * Tem de coincidir com `PRIVADO` em `public/sw.js`.
  */
-export const CACHE_PRIVADA = "axon-privado-v1";
+export const CACHE_PRIVADA = "axon-privado-v2";
 
 /**
  * Apaga as páginas guardadas para uso sem rede ao sair da conta.

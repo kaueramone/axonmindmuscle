@@ -12,7 +12,7 @@
 
 const SHELL = "axon-shell-v2";
 /** Páginas já autenticadas. Cache à parte, para poder ser apagada sozinha. */
-const PRIVADO = "axon-privado-v1";
+const PRIVADO = "axon-privado-v2";
 
 const PRECACHE = ["/offline.html", "/favicon.svg", "/icon-192.png"];
 
@@ -67,6 +67,13 @@ async function navegar(request, url) {
   }
 
   const guardavel = OFFLINE_UTIL.test(url.pathname);
+  // Cada rotina tem conteúdo próprio. Nunca devolver a última rotina visitada
+  // como se fosse a que o endereço pede.
+  const cacheKey = new URL(url.pathname, url.origin);
+  for (const name of ["rotina", "livre"]) {
+    if (url.searchParams.has(name)) cacheKey.searchParams.set(name, url.searchParams.get(name));
+  }
+  const chave = cacheKey.pathname + cacheKey.search;
 
   try {
     const resposta = await comPrazo(request);
@@ -86,11 +93,11 @@ async function navegar(request, url) {
     // um ecrã de entrada que nunca mais saía do cache.
     if (guardavel && resposta.ok) {
       const copia = resposta.clone();
-      caches.open(PRIVADO).then((c) => c.put(url.pathname, copia));
+      caches.open(PRIVADO).then((c) => c.put(chave, copia));
     }
     return resposta;
   } catch {
-    const guardada = guardavel ? await caches.match(url.pathname) : null;
+    const guardada = guardavel ? await caches.match(chave) : null;
     return guardada ?? (await caches.match("/offline.html"));
   }
 }

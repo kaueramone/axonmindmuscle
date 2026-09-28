@@ -1,7 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
+import type { RoutinePlan } from "@/lib/routines/plan";
+import { useRecoveredWorkout } from "./workout-recovery";
+import { clearDraft, writeDraft, type WorkoutDraft, type WorkoutStep as Step, type LoggedSet } from "@/lib/workout/draft";
 import { AxonRunner } from "@/components/workout/axon-runner";
 import { ExerciseBrief } from "@/components/workout/exercise-brief";
 import { SaveRoutine } from "@/components/workout/save-routine";
@@ -22,6 +25,7 @@ import {
   endSession,
   flushQueue,
   logSet,
+  pendingCount,
   setSessionRpe,
   startSession,
   tempoToColumns,
@@ -51,26 +55,8 @@ export type ReadinessHint = {
   avoidMuscles: string[];
 };
 
-type Step =
-  | "picking"
-  | "configuring"
-  | "running"
-  | "logging"
-  | "resting"
-  | "effort"
-  | "summary";
-
 type Zone = "facil" | "moderado" | "forte";
 const ZONES: Zone[] = ["facil", "moderado", "forte"];
-
-type LoggedSet = {
-  exercise: string;
-  weight: number | null;
-  reps: number;
-  volume: number;
-  /** Segundos, quando o exercício é contado por tempo. */
-  duration?: number;
-};
 
 const PRESETS: { key: keyof Dict["workout"]["presets"]; tempo: Tempo }[] = [
   { key: "controlled", tempo: { eccentric: 3, pause: 1, concentric: 1 } },
@@ -148,81 +134,124 @@ export function WorkoutRunner({
   dict,
   userId,
   exercises,
-  existingSessionId,
   readiness,
   lastByExercise,
-  routineId,
+  routineId: requestedRoutineId,
+  routinePlan: requestedRoutinePlan = null,
   plan,
 }: {
   locale: Locale;
   dict: Dict;
   userId: string;
   exercises: ExerciseOption[];
-  existingSessionId: string | null;
   readiness: ReadinessHint | null;
   /** O que a pessoa fez da última vez em cada exercício, por id. */
   lastByExercise: Record<string, LastPerformance>;
   /** A rotina que esta sessão repete, quando veio de uma. */
   routineId: string | null;
+  routinePlan?: RoutinePlan | null;
   /** Escrever no mural é do PRO; a pergunta de partilha respeita-o. */
   plan: "free" | "pro";
 }) {
   const copy = dict.workout;
+  const recovered = useRecoveredWorkout();
+  const routineId = recovered ? recovered.routineId : requestedRoutineId;
+  const routinePlan = recovered
+    ? recovered.routinePlan ?? (requestedRoutinePlan?.id === routineId ? requestedRoutinePlan : null)
+    : requestedRoutinePlan;
+  const [storageError, setStorageError] = useState(false);
+  const closed = useRef(false);
 
-  const [step, setStep] = useState<Step>("picking");
-  const [sessionId, setSessionId] = useState<string | null>(existingSessionId);
-  const [exercise, setExercise] = useState<ExerciseOption | null>(null);
-  const [tempo, setTempo] = useState<Tempo>(PRESETS[0].tempo);
-  const [targetReps, setTargetReps] = useState(10);
-  const [weight, setWeight] = useState("");
+  const [step, setStep] = useState<Step>(recovered?.step ?? "picking");
+  const [sessionId, setSessionId] = useState<string | null>(recovered?.sessionId ?? null);
+  const [exercise, setExercise] = useState<ExerciseOption | null>(recovered?.exercise ?? null);
+  const [tempo, setTempo] = useState<Tempo>(recovered?.tempo ?? PRESETS[0].tempo);
+  const [targetReps, setTargetReps] = useState(recovered?.targetReps ?? 10);
+  const [weight, setWeight] = useState(recovered?.weight ?? "");
   // A prontidão de hoje entra como valor de partida, não como imposição.
   const [rir, setRir] = useState<number | null>(
-    Math.min(4, 2 + (readiness?.rirDelta ?? 0)),
+    recovered ? recovered.rir : Math.min(4, 2 + (readiness?.rirDelta ?? 0)),
   );
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
   const [semRede, setSemRede] = useState(false);
-  const [sound, setSound] = useState(false);
-  const [haptics, setHaptics] = useState(true);
+  const [sound, setSound] = useState(recovered?.sound ?? false);
+  const [haptics, setHaptics] = useState(recovered?.haptics ?? true);
   const [busy, setBusy] = useState(false);
   const [queued, setQueued] = useState(false);
-  const [logged, setLogged] = useState<LoggedSet[]>([]);
+  const [logged, setLogged] = useState<LoggedSet[]>(recovered?.logged ?? []);
   const [restLeft, setRestLeft] = useState(REST_SECONDS);
   /* O descanso é um prazo, não um contador: com o ecrã bloqueado os
      intervalos param, e ao voltar o que conta é quanto falta para o prazo. */
-  const [restEndsAt, setRestEndsAt] = useState<number | null>(null);
+  const [restEndsAt, setRestEndsAt] = useState<number | null>(recovered?.restEndsAt ?? null);
   const [restAlert, setRestAlert] = useState(false);
   const [restAlertState, setRestAlertState] = useState<
     "unsupported" | "default" | "granted" | "denied"
   >("default");
   const restAvisado = useRef(false);
-  const [startedAt] = useState(() => Date.now());
-  const actualReps = useRef(0);
+  const [startedAt] = useState(() => recovered?.startedAt ?? Date.now());
+  const [actualReps, setActualReps] = useState(recovered?.actualReps ?? 0);
 
   /* Exercícios contados por tempo: o alvo é uma intenção, não um limite. */
-  const [targetMinutes, setTargetMinutes] = useState(20);
-  const [zone, setZone] = useState<Zone>("moderado");
+  const [targetMinutes, setTargetMinutes] = useState(recovered?.targetMinutes ?? 20);
+  const [zone, setZone] = useState<Zone>(recovered?.zone ?? "moderado");
   const [sessionRpe, setSessionRpe_local] = useState<number | null>(null);
   const loggedDuration = useRef(0);
-  const timer = useTimer();
+  const timer = useTimer({ initialElapsed: recovered?.timerElapsed ?? 0 });
   const porTempo = exercise?.tracking === "time";
 
   const metronome = useMetronome({
     tempo,
     targetReps,
+    initialElapsed: recovered?.step === "running" ? recovered.metronomeElapsed : undefined,
     sound,
     haptics,
     onFinished: (reps) => {
-      actualReps.current = reps;
+      setActualReps(reps);
       setStep("logging");
     },
   });
 
+  // Persist fields immediately and counters once a second; flush exact counters on exit.
+  const snapshot = useRef<WorkoutDraft | null>(null);
+  const lastSaved = useRef("");
+  useLayoutEffect(() => {
+    if (closed.current || step === "summary" || step === "effort" || (!sessionId && !exercise)) return;
+    const draft: WorkoutDraft = {
+      version: 1, userId, sessionId, routineId, routinePlan, startedAt, updatedAt: Date.now(), step,
+      exercise, tempo, targetReps, weight, rir, logged, restEndsAt, targetMinutes, zone,
+      actualReps: actualReps, timerElapsed: timer.getElapsed(),
+      metronomeElapsed: metronome.getElapsed(), sound, haptics,
+    };
+    snapshot.current = draft;
+    const fingerprint = JSON.stringify({ ...draft, updatedAt: 0,
+      timerElapsed: Math.floor(draft.timerElapsed), metronomeElapsed: Math.floor(draft.metronomeElapsed) });
+    if (lastSaved.current === fingerprint) return;
+    try { writeDraft(draft); lastSaved.current = fingerprint; }
+    catch { setStorageError(true); }
+  });
+  useEffect(() => {
+    const save = () => {
+      if (closed.current || !snapshot.current) return;
+      try {
+        writeDraft({ ...snapshot.current, updatedAt: Date.now(),
+          timerElapsed: timer.getElapsed(), metronomeElapsed: metronome.getElapsed() });
+      } catch { setStorageError(true); }
+    };
+    window.addEventListener("pagehide", save);
+    document.addEventListener("visibilitychange", save);
+    return () => {
+      save();
+      window.removeEventListener("pagehide", save);
+      document.removeEventListener("visibilitychange", save);
+    };
+  }, [timer.getElapsed, metronome.getElapsed]);
+
   /* Escoa séries que tenham ficado em fila num treino anterior. */
   useEffect(() => {
-    void flushQueue();
+    void flushQueue(userId).catch(() => {});
     const onOnline = () => {
       setSemRede(false);
-      void flushQueue();
+      void flushQueue(userId).catch(() => {});
     };
     const onOffline = () => setSemRede(true);
 
@@ -234,6 +263,14 @@ export function WorkoutRunner({
       window.removeEventListener("offline", onOffline);
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void flushQueue(userId).then(() => {
+      if (!cancelled) setQueued(pendingCount(userId) > 0);
+    }).catch(() => { if (!cancelled) setQueued(true); });
+    return () => { cancelled = true; };
+  }, [userId, logged.length]);
 
   /* Contagem do descanso, ancorada ao prazo. */
   useEffect(() => {
@@ -296,7 +333,9 @@ export function WorkoutRunner({
     setBusy(true);
     let id = sessionId;
     if (!id) {
-      const sessao = await startSession(userId, routineId);
+      let sessao;
+      try { sessao = await startSession(userId, routineId); }
+      catch { setStorageError(true); setBusy(false); return; }
       id = sessao.id;
       setSessionId(id);
       if (!sessao.online) setQueued(true);
@@ -309,10 +348,10 @@ export function WorkoutRunner({
     } else {
       metronome.start();
     }
-  }, [sessionId, userId, metronome, timer, porTempo]);
+  }, [sessionId, userId, routineId, metronome, timer, porTempo]);
 
   const stopSet = useCallback(() => {
-    actualReps.current = metronome.rep;
+    setActualReps(metronome.rep);
     metronome.stop();
     setStep("logging");
   }, [metronome]);
@@ -325,7 +364,8 @@ export function WorkoutRunner({
     if (!exercise || !sessionId) return;
     setBusy(true);
 
-    const { persisted } = await logSet({
+    let result;
+    try { result = await logSet({
       session_id: sessionId,
       user_id: userId,
       exercise_id: exercise.id,
@@ -338,12 +378,13 @@ export function WorkoutRunner({
       intensity_zone: zone,
       ...tempoToColumns({ eccentric: 0, pause: 0, concentric: 0 }),
       rest_seconds: null,
-    });
+    }); } catch { setStorageError(true); setBusy(false); return; }
 
-    setQueued(!persisted);
+    setQueued(!result.persisted);
     setLogged((prev) => [
       ...prev,
       {
+        exerciseId: exercise.id,
         exercise: exercise.name,
         weight: null,
         reps: 0,
@@ -362,9 +403,10 @@ export function WorkoutRunner({
     setBusy(true);
 
     const carga = weight.trim() ? Number(weight.replace(",", ".")) : null;
-    const reps = actualReps.current || targetReps;
+    const reps = actualReps;
 
-    const { persisted } = await logSet({
+    let result;
+    try { result = await logSet({
       session_id: sessionId,
       user_id: userId,
       exercise_id: exercise.id,
@@ -377,12 +419,13 @@ export function WorkoutRunner({
       intensity_zone: null,
       ...tempoToColumns(tempo),
       rest_seconds: null,
-    });
+    }); } catch { setStorageError(true); setBusy(false); return; }
 
-    setQueued(!persisted);
+    setQueued(!result.persisted);
     setLogged((prev) => [
       ...prev,
       {
+        exerciseId: exercise.id,
         exercise: exercise.name,
         weight: carga,
         reps,
@@ -402,17 +445,22 @@ export function WorkoutRunner({
     rir,
     tempo,
     logged.length,
+    actualReps,
   ]);
 
   const finish = useCallback(async () => {
     setBusy(true);
-    if (sessionId) await endSession(sessionId, userId);
+    try {
+      if (sessionId) await endSession(sessionId, userId);
+      clearDraft(userId);
+      closed.current = true;
+    } catch { setStorageError(true); setBusy(false); return; }
     setBusy(false);
     // O esforço percebido da sessão é o que, multiplicado pelos minutos, dá a
     // carga — e é a única unidade que soma musculação e cardio. Perguntamo-lo
     // num ecrã próprio para não competir com o resumo.
     setStep(logged.length > 0 ? "effort" : "summary");
-  }, [sessionId, logged.length]);
+  }, [sessionId, userId, logged.length]);
 
   const saveEffort = useCallback(
     async (valor: number | null) => {
@@ -425,6 +473,17 @@ export function WorkoutRunner({
     [sessionId],
   );
 
+  function pickExercise(escolhido: ExerciseOption) {
+    setExercise(escolhido);
+    const proposta = suggest(lastByExercise[escolhido.id] ?? null, readiness, escolhido.tracking === "time");
+    const planned = routinePlan?.entries.find((entry) => entry.exercise.id === escolhido.id);
+    setSuggestion(proposta);
+    setWeight(proposta.weightKg != null ? String(proposta.weightKg) : "");
+    setTargetReps(planned?.reps ?? proposta.reps ?? 10);
+    setTargetMinutes((planned?.durationS ?? proposta.durationS ?? 1200) / 60);
+    setStep("configuring");
+  }
+
   /* ---------------- Ecrã da série, em modo imersivo ---------------- */
 
   /* ---------------- Ecrã do cronómetro, em modo imersivo ---------------- */
@@ -436,6 +495,7 @@ export function WorkoutRunner({
 
     return (
       <div className="fixed inset-0 z-50 flex flex-col bg-bg safe-t safe-b">
+        {storageError ? <Alert tone="danger">{copy.recovery.storageError}</Alert> : null}
         <div className="flex items-center justify-between px-5 py-4">
           <span className="truncate text-subhead text-fg-muted">
             {exercise?.name}
@@ -506,6 +566,7 @@ export function WorkoutRunner({
     const fase = copy.phases[metronome.phase];
     return (
       <div className="fixed inset-0 z-50 flex flex-col bg-bg safe-t safe-b">
+        {storageError ? <Alert tone="danger">{copy.recovery.storageError}</Alert> : null}
         <div className="flex items-center justify-between px-5 py-4">
           <span className="truncate text-subhead text-fg-muted">
             {exercise?.name}
@@ -564,33 +625,39 @@ export function WorkoutRunner({
       {/* Sem rede, o ecrã veio do que ficou guardado da última vez. Dizê-lo é
           o que separa "está a funcionar sem net" de "isto está a mostrar-me
           números velhos e eu não sabia". */}
+      {storageError ? <Alert tone="danger">{copy.recovery.storageError}</Alert> : null}
       {semRede ? <Alert tone="info">{copy.offlineTraining}</Alert> : null}
       {queued ? <Alert tone="info">{copy.offlineQueued}</Alert> : null}
 
-      {step === "picking" ? (
+      {routinePlan && step !== "summary" && step !== "effort" ? (
+        <Card className="flex flex-col gap-3">
+          <h2 className="text-title3 text-fg">{routinePlan.name}</h2>
+          {routinePlan.entries.length === 0 ? <Alert tone="danger">{copy.routinePlan.unavailable}</Alert> : (
+            <ol className="flex flex-col gap-2">
+              {routinePlan.entries.map((entry, index) => {
+                const done = logged.filter((set) => set.exerciseId ? set.exerciseId === entry.exercise.id : set.exercise === entry.exercise.name).length;
+                return <li key={entry.exercise.id}>
+                  <button type="button" disabled={busy || step === "logging"}
+                    onClick={() => pickExercise(entry.exercise)}
+                    className="flex w-full items-center justify-between gap-3 rounded-md border border-hairline p-3 text-left text-callout disabled:opacity-50">
+                    <span>{index + 1}. {entry.exercise.name}</span>
+                    <span className="text-caption text-fg-muted">
+                      {done}/{entry.sets ?? "—"} {copy.routinePlan.sets}
+                      {entry.exercise.tracking === "time" && entry.durationS != null ? ` · ${formatDuration(entry.durationS)}` : entry.reps != null ? ` · ${entry.reps} ${copy.targetReps.toLowerCase()}` : ""}
+                    </span>
+                  </button>
+                </li>;
+              })}
+            </ol>
+          )}
+        </Card>
+      ) : null}
+      {step === "picking" && !routinePlan ? (
         <ExercisePicker
           exercises={exercises}
           copy={copy}
           muscleLabels={dict.app.progress.muscles}
-          onPick={(escolhido) => {
-            setExercise(escolhido);
-
-            // O número entra já preenchido. A pessoa pode mexer — é sugestão,
-            // não imposição — mas não tem de o descobrir sozinha.
-            const proposta = suggest(
-              lastByExercise[escolhido.id] ?? null,
-              readiness,
-              escolhido.tracking === "time",
-            );
-            setSuggestion(proposta);
-            setWeight(proposta.weightKg != null ? String(proposta.weightKg) : "");
-            if (proposta.reps != null) setTargetReps(proposta.reps);
-            if (proposta.durationS != null) {
-              setTargetMinutes(Math.max(1, Math.round(proposta.durationS / 60)));
-            }
-
-            setStep("configuring");
-          }}
+          onPick={pickExercise}
         />
       ) : null}
 
@@ -899,9 +966,9 @@ export function WorkoutRunner({
                 type="number"
                 min={0}
                 max={100}
-                defaultValue={actualReps.current || targetReps}
+                value={actualReps}
                 onChange={(event) => {
-                  actualReps.current = Number(event.target.value);
+                  setActualReps(Math.max(0, Number(event.target.value) || 0));
                 }}
                 className="data-mono h-13 rounded-md border border-hairline bg-surface px-4 text-title3 text-fg outline-none focus:border-accent"
               />

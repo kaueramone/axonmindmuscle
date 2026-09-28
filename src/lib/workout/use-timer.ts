@@ -8,11 +8,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
  * atrasaria o tempo registado. Ao voltar ao primeiro plano, o valor é
  * recalculado a partir do instante de arranque.
  */
-export function useTimer({ onTarget }: { onTarget?: () => void } = {}) {
-  const [elapsed, setElapsed] = useState(0);
+export function useTimer({ onTarget, initialElapsed = 0 }: { onTarget?: () => void; initialElapsed?: number } = {}) {
+  const [elapsed, setElapsed] = useState(initialElapsed);
   const [running, setRunning] = useState(false);
   const inicio = useRef<number | null>(null);
-  const acumulado = useRef(0);
+  const acumulado = useRef(initialElapsed);
   const alvoAvisado = useRef(false);
 
   const ler = useCallback(() => {
@@ -81,7 +81,7 @@ export function useTimer({ onTarget }: { onTarget?: () => void } = {}) {
     [elapsed, onTarget],
   );
 
-  return { elapsed, running, start, pause, resume, stop, reset, marcarAlvo };
+  return { getElapsed: ler, elapsed, running, start, pause, resume, stop, reset, marcarAlvo };
 }
 
 /**
