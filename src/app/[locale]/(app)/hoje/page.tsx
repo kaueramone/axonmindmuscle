@@ -152,6 +152,11 @@ export default async function TodayPage({
               ? t(dict.app.week.todayStart, { name: rotinaDeHoje.name })
               : dict.workout.startCta}
           </ButtonLink>
+          {rotinaDeHoje ? (
+            <ButtonLink variant="secondary" fullWidth href={`${route(locale, "workout")}?livre=1`}>
+              {dict.workout.routinePlan.free}
+            </ButtonLink>
+          ) : null}
           <Link
             href={route(locale, "week")}
             className="flex items-center justify-center gap-1 text-subhead font-medium text-accent"

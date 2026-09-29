@@ -159,9 +159,6 @@ export default async function WorkoutPage({
       />
 
       <div className="mx-auto flex max-w-2xl flex-col gap-7 px-5 pt-6">
-        {(
-          <RoutineList routines={routines} copy={dict.workout.routines} locale={locale} />
-        )}
         {routineId ? <ButtonLink variant="ghost" href={`${route(locale, "workout")}?livre=1`}>{dict.workout.routinePlan.free}</ButtonLink> : null}
         {rotina && !selected && livre !== "1" ? <Alert tone="danger">{dict.workout.routinePlan.unavailable}</Alert> : null}
 
@@ -177,6 +174,12 @@ export default async function WorkoutPage({
           routineId={routineId}
           plan={perfil?.plan ?? "free"}
         />
+        <details className="rounded-xl border border-hairline p-4">
+          <summary className="cursor-pointer text-callout font-medium">{dict.workout.routines.listTitle}</summary>
+          <div className="mt-4">
+            <RoutineList routines={routines} copy={dict.workout.routines} locale={locale} />
+          </div>
+        </details>
       </div>
     </>
   );

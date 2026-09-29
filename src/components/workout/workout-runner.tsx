@@ -629,15 +629,20 @@ export function WorkoutRunner({
       {semRede ? <Alert tone="info">{copy.offlineTraining}</Alert> : null}
       {queued ? <Alert tone="info">{copy.offlineQueued}</Alert> : null}
 
-      {routinePlan && step !== "summary" && step !== "effort" ? (
+      {routinePlan && step === "picking" ? (
         <Card className="flex flex-col gap-3">
           <h2 className="text-title3 text-fg">{routinePlan.name}</h2>
+          {step === "picking" && routinePlan.entries.length > 0 ? (
+            <Button fullWidth onClick={() => pickExercise(routinePlan.entries[0].exercise)} disabled={busy}>
+              {copy.startCta}
+            </Button>
+          ) : null}
           {routinePlan.entries.length === 0 ? <Alert tone="danger">{copy.routinePlan.unavailable}</Alert> : (
             <ol className="flex flex-col gap-2">
               {routinePlan.entries.map((entry, index) => {
                 const done = logged.filter((set) => set.exerciseId ? set.exerciseId === entry.exercise.id : set.exercise === entry.exercise.name).length;
                 return <li key={entry.exercise.id}>
-                  <button type="button" disabled={busy || step === "logging"}
+                  <button type="button" disabled={busy}
                     onClick={() => pickExercise(entry.exercise)}
                     className="flex w-full items-center justify-between gap-3 rounded-md border border-hairline p-3 text-left text-callout disabled:opacity-50">
                     <span>{index + 1}. {entry.exercise.name}</span>

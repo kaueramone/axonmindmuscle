@@ -1283,7 +1283,7 @@ const dictionary: Dict = {
     summaryClose: "Voltar ao início",
     setNumber: "Série {n}",
     routinePlan: {
-      free: "Treino livre",
+      free: "Iniciar treino livre",
       sets: "séries",
       unavailable: "Esta rotina não está disponível ou não tem exercícios ativos. Escolha outra rotina ou um treino livre.",
     },
